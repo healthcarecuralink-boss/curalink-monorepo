@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EDEFF2;font-family:Inter,sans-serif;}
+doc-page:not(:defined){visibility:hidden}
+h1,h2,h3{font-family:'Bricolage Grotesque',sans-serif;color:#0A1B2A;text-wrap:balance}
+h1{font-size:30px;font-weight:800;margin:0 0 6px} h2{font-size:20px;font-weight:800;margin:36px 0 12px;padding-top:14px;border-top:2px solid #E3E7EA}
+h3{font-size:15.5px;font-weight:700;margin:20px 0 8px}
+p,li{font-size:13.5px;line-height:1.65;color:#334A5E;text-wrap:pretty}
+code{background:#EEF2F6;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#057A4E}
+table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12.5px;margin:10px 0}
+th{background:#F7F8FA;text-align:left;padding:7px 10px;font-weight:700;color:#334A5E;border:1px solid #E3E7EA;word-wrap:break-word;overflow-wrap:break-word}
+td{padding:7px 10px;border:1px solid #E3E7EA;color:#334A5E;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700;margin-right:4px}
+.imgrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0 4px}
+.imgrow img{width:100%;border-radius:12px;border:1px solid #E3E7EA;display:block}
+.imgcap{font-size:11px;color:#51677C;margin-top:5px;text-align:center;margin-bottom:10px}
+.imgcapgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.callout{background:#E9FBF3;border-radius:10px;padding:12px 15px;font-size:13px;color:#057A4E;margin:10px 0}
+.warn{background:#FCF1E1;border-radius:10px;padding:12px 15px;font-size:13px;color:#7A4A0F;margin:10px 0}
+</style>
+</helmet>
+
+<template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#00C27C"/><text x="50" y="60" font-size="30" fill="#fff" text-anchor="middle" font-family="sans-serif">CL</text></svg></template>
+
+<div style="min-height:100vh;padding:36px 16px;display:flex;justify-content:center">
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.75in" hint-size="816px,1056px">
+
+<h1>CuraLink — Developer Handoff</h1>
+<p style="font-size:14px;color:#51677C;margin-top:0">Consumer home-healthcare app · Hyderabad · iOS-first · "Care, comfort, connected."</p>
+
+<div class="callout"><b>Shared backend, one source of truth:</b> CuraLink (this app, patient/family-facing) and <b>CuraLink Plus</b> (staff/provider app) read and write the <b>same</b> data store. A visit booked here is the exact job a nurse accepts in Plus; the live map here consumes the exact GPS stream Plus publishes; a prescription written in Plus surfaces here in Health Records. See the companion <b>CuraLink Plus — Developer Handoff</b> document for the staff side of this same contract — §8 there and §7 here must be built as one schema, not two.</p>
+
+<h2>1 · Product overview</h2>
+<p>CuraLink lets Indian families book qualified nurses, doctors, physiotherapists, vets, lab tests, and ambulances to come to their <b>home</b>. The core user is an adult child (25–45) managing care for aging parents, a young parent managing kids' illnesses, or a pet owner — usually opening the app in a stressful, worried moment. The product must feel like <b>a calm, competent friend</b>, not medical chrome.</p>
+<p><b>Primary USP: rapid home care</b> — a verified nurse at your door within the hour, one-tap instant booking, live tracking. This is the reason the app exists and is the hero of the whole experience (see the Home screen's rapid-care hero card, §6).</p>
+<p>The prototype covers the entire app: onboarding/auth, home, full booking flow, live-visit tracking, profile/family, history/prescriptions, wallet/payments, support/settings, plus 40+ extended surfaces (vitals, care plan, insurance/claims, lab reports, pharmacy orders, subscriptions, reviews, ambulance booking, video consult, chronic care programs, loyalty rewards, and more — full inventory in §4).</p>
+
+<h2>2 · Design system — "Caring Warmth"</h2>
+<p>Current, canonical theme: <b>green primary, navy trust, near-white minimalist</b> (an earlier coral palette exists only as an alternate reference — <code>CuraLink Coral v1.dc.html</code> — do not build from it).</p>
+<h3>2.1 Color tokens</h3>
+<table>
+<tr><th>Token</th><th>Hex</th><th>Use</th></tr>
+<tr><td>primary</td><td><span class="tag" style="background:#00C27C;color:#fff">#00C27C</span></td><td>Primary green — CTAs, active states, accents</td></tr>
+<tr><td>primary-strong</td><td><span class="tag" style="background:#00CE86;color:#fff">#00CE86</span></td><td>Brighter green (gradient top, splash)</td></tr>
+<tr><td>primary-press</td><td><span class="tag" style="background:#057A4E;color:#fff">#057A4E</span></td><td>Pressed/darker green, gradient bottom, "from ₹" prices</td></tr>
+<tr><td>navy</td><td><span class="tag" style="background:#0B1D2E;color:#fff">#0B1D2E</span></td><td>Trust/deep sections, dark cards, headings-on-dark</td></tr>
+<tr><td>bg / surface</td><td>#FAFAF8 / #FFFFFF</td><td>App background (near-white, faint warm) / cards, inputs, sheets</td></tr>
+<tr><td>ink / muted / faint</td><td>#0A1B2A / #51677C / #98A6B4</td><td>Primary / secondary / caption text</td></tr>
+<tr><td>border / border-2</td><td>#E3E7EA / #E8ECEF</td><td>Default 1px borders / card borders</td></tr>
+<tr><td>success / warning / error / info</td><td>#0E9F6E / #B45309 / #C81E1E / #1D6FB8</td><td>Semantic text; each has a matching tint bg (see README for full ramp)</td></tr>
+<tr><td>star</td><td><span class="tag" style="background:#E8A33D;color:#fff">#E8A33D</span></td><td>Rating stars</td></tr>
+</table>
+<p>Category accents: nurse/nursing <code>#057A4E</code> on <code>#E9FBF3</code>; doctor <code>#142A3E</code>; physio <code>#B45309</code> on <code>#FCF1E1</code>; vet <code>#B87333</code>; pediatric/lead <code>#6D5FA3</code> on <code>#EAE7F2</code>; lab/navy <code>#0B1D2E</code> on <code>#EEF2F6</code>. <b>Dark mode</b> is defined (warm-charcoal navy base, brightened green/sage accents) and wired to a Settings toggle.</p>
+<h3>2.2 Typography</h3>
+<p><b>Display/headings:</b> Bricolage Grotesque (400–800) — greetings, screen titles, hero numbers, button labels, tight letter-spacing at large sizes. <b>Body/UI/numbers:</b> Inter (400–700). Scale: display 30–42px/800, H1 24–27px/800, H2 19–22px/800, H3 15–16.5px/700–800, body 13.5–16px, caption 10.5–11.5px. Minimum readable size ~10.5px (captions only); hit targets ≥44px.</p>
+<h3>2.3 Spacing, radii, shadows, icons</h3>
+<p>8pt spacing scale; screens 20px horizontal padding, cards 14–18px. Radii: cards 16–20px, buttons 12–14px, chips 11–16px, pills 99px, sheets 28px (top corners). Shadows are soft and shallow (card <code>0 2px 10px rgba(11,29,46,.04)</code>; green CTA <code>0 8px 20px rgba(0,194,124,.22–.28)</code>). Icons: Feather/Lucide line set, stroke-width 1.8–2.4, round caps/joins — no filled/Material icons.</p>
+<h3>2.4 Components</h3>
+<p>Buttons (primary/secondary/ghost/destructive/icon-only, each with pressed/disabled states), text fields (52px height, phone-prefix and password-reveal variants), cards, status pills (pending/confirmed/en-route/in-progress/completed/cancelled), 5-tab bottom nav with a raised center FAB ("Book"), bottom-sheet modals, empty states, shimmer loading skeletons, dark toast pills. Full live reference at the in-app <b>Design system</b> screen.</p>
+
+<div class="imgrow">
+<img src="uploads/CuraLink home healthcare app/screenshots/24-design-system.png"><img src="uploads/CuraLink home healthcare app/screenshots/05-home.png"><img src="uploads/CuraLink home healthcare app/screenshots/01-splash.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Design system reference — palette, type, components</div>
+<div class="imgcap">Home — rapid-care hero + services</div>
+<div class="imgcap">Splash</div>
+</div>
+
+<h2>3 · Global interaction: Cura AI assistant</h2>
+<p>A persistent floating button (navy pill, pulsing green ring) opens a personalized concierge chat reachable from nearly every screen — it can book visits, track orders, refill meds, and pull records. In production this maps to an <b>LLM tool-calling agent</b> scoped to the authenticated patient's own endpoints (create booking, refill Rx, fetch records, etc.). Hidden on splash/onboarding/auth, the assistant itself, and immersive flows (chat, live tracking, visit-in-progress, ambulance); vertical offset is route-aware to clear bottom nav or sticky CTAs.</p>
+<div class="imgrow" style="grid-template-columns:1fr 1fr">
+<img src="uploads/CuraLink home healthcare app/screenshots/19-cura-ai.png"><img src="uploads/CuraLink home healthcare app/screenshots/11-live-tracking.png">
+</div>
+<div class="imgcapgrid" style="grid-template-columns:1fr 1fr">
+<div class="imgcap">Cura AI assistant</div>
+<div class="imgcap">Active visit tracking (live map + status timeline)</div>
+</div>
+
+<h2>4 · Screen inventory (62 screens)</h2>
+<h3>A · Onboarding &amp; auth</h3>
+<p>Splash (auto-advance) → Welcome carousel (3 value-prop slides) → Login → Signup → Phone OTP (auto-fill demo) → Care setup ("Who are you caring for?" — myself/parent/child/pet multi-select).</p>
+<h3>B · Home &amp; booking</h3>
+<p>Home dashboard (rapid-care hero, active-visit card, service tiles, "Book again", health grid, loading skeleton variant) → All services → Service category detail → 5-step booking flow (Service → Who for → Date &amp; time → Address → Summary &amp; Pay, with a payment-failed bottom sheet demonstrating the error state) → Booking success.</p>
+<h3>C · Live visit experience (hero surface)</h3>
+<p>Active visit tracking (real map, animated vehicle + pulsing destination pin, nurse card, arrival OTP, status timeline) → Visit in progress → Visit completion (rate/tip/review).</p>
+<h3>D · Profile &amp; family</h3>
+<p>Profile home (family/pets list, Care Plus upsell) → Add/edit family member → Medical records → Emergency contacts (ambulance banner).</p>
+<h3>E · History &amp; prescriptions</h3>
+<p>Bookings list (Upcoming/Past) → Past booking detail → Prescriptions library → Prescription detail (Rx-style, "Order these medicines" → Pharmacy).</p>
+<h3>F · Wallet &amp; payments</h3>
+<p>Wallet home → Add money → Payment methods → Transaction detail.</p>
+<h3>G · Support &amp; settings</h3>
+<p>Help center (FAQ accordion) → Chat support (WhatsApp-style, reused for second-opinion/medical-team) → Settings (notifications, language, dark mode, biometric) → Notification center → Design system reference.</p>
+<h3>H · Extended surfaces (40+)</h3>
+<p>Vitals dashboard (sparklines) · Recovery/care plan timeline · Insurance &amp; claims (+ card upload) · Lab reports + book-a-test (cart + pickup slot) · Pharmacy orders (assigned Rx → order → delivery) · Subscription plans (Care / Care Plus / Family Plus) · Reviews &amp; ratings · Ambulance booking (BLS/ALS/transport, live dispatch) · Provider profile · Appointment reminders · Diet &amp; nutrition plan · Refer a friend · Home ICU setup · Medical team (+ second opinion) · Chronic care programs · Health checkup packages · Home nursing subscription · Give back/donate (blood requests) · Video consultation · Loyalty rewards · Health articles · Appointment calendar.</p>
+
+<div class="imgrow">
+<img src="uploads/CuraLink home healthcare app/screenshots/09-booking-pay.png"><img src="uploads/CuraLink home healthcare app/screenshots/17-vitals.png"><img src="uploads/CuraLink home healthcare app/screenshots/22-ambulance.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Booking — summary &amp; pay</div>
+<div class="imgcap">Vitals dashboard (sparklines)</div>
+<div class="imgcap">Ambulance booking (BLS/ALS/transport)</div>
+</div>
+<div class="imgrow">
+<img src="uploads/CuraLink home healthcare app/screenshots/18-medical-team.png"><img src="uploads/CuraLink home healthcare app/screenshots/26-pharmacy-order.png"><img src="uploads/CuraLink home healthcare app/screenshots/25-video-consult.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Medical team (+ second opinion)</div>
+<div class="imgcap">Pharmacy order (doctor-assigned Rx)</div>
+<div class="imgcap">Video consultation</div>
+</div>
+<div class="imgrow">
+<img src="uploads/CuraLink home healthcare app/screenshots/20-home-icu.png"><img src="uploads/CuraLink home healthcare app/screenshots/21-plans.png"><img src="uploads/CuraLink home healthcare app/screenshots/33-loyalty-rewards.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Home ICU setup</div>
+<div class="imgcap">Subscription plans</div>
+<div class="imgcap">Loyalty rewards</div>
+</div>
+
+<h2>5 · Interactions &amp; behavior</h2>
+<ul>
+<li><b>Navigation:</b> <code>goTo(name, patch?)</code> pushes onto a back-stack; root tabs clear it. 5-tab bottom nav (Home, Bookings, Book-center-FAB, Wallet, Profile).</li>
+<li><b>Instant booking (USP):</b> <code>expressBook()</code> preselects nearest nurse, today, earliest window — skips steps 1–4 straight to payment. Wire to a real "find nearest available provider now" backend call.</li>
+<li><b>Payment:</b> first attempt intentionally fails (demonstrates the error sheet); retry succeeds. Drive from Razorpay order + webhook in production.</li>
+<li><b>Live visit ETA:</b> counts down then flips to Arrived + toast — in production this is a live subscription to the GPS stream <b>CuraLink Plus publishes</b> (see §7).</li>
+<li><b>Ratings/reviews, toggles, cart selections</b> are local state in the prototype; persist server-side.</li>
+</ul>
+
+<h2>6 · State management (production shape)</h2>
+<p>Split the prototype's single in-memory state object into: <b>Auth/session</b> (phone/email, OTP, JWT, current user), <b>server data</b> via React Query/RTK Query/Supabase (profile, family, addresses, services, providers, bookings with live status, prescriptions, lab data, vitals, insurance, wallet, pharmacy orders, subscriptions, reviews, notifications, chat), <b>ephemeral UI state</b> (booking-flow selections, cart, toggles, toasts), and <b>realtime subscriptions</b> (visit status + provider GPS, chat, notifications).</p>
+
+<h2>7 · Shared backend — core entities</h2>
+<p>Both apps talk to <b>one backend, one database</b>. Key tables (Postgres/Prisma-style): <code>users</code> (role: patient/provider/admin), <code>family_members</code>, <code>addresses</code>, <code>providers</code> (incl. live location), <code>services</code>/<code>sub_services</code>, <code>bookings</code> (status pending→confirmed→en_route→in_progress→completed|cancelled), <code>visit_events</code>, <code>provider_locations</code> (GPS stream), <code>prescriptions</code>, <code>lab_orders</code>/<code>lab_reports</code>, <code>vitals</code>, <code>insurance_policies</code>/<code>claims</code>, <code>wallet_accounts</code>/<code>transactions</code>, <code>payment_methods</code> (Razorpay), <code>subscriptions</code>, <code>reviews</code>, <code>pharmacy_orders</code> (linked to prescription + fulfilling pharmacy — the exact record CuraLink Plus's Pharmacy Partner role fulfills), <code>ambulance_requests</code> (the exact record an Ambulance Partner accepts), <code>reminders</code>, <code>chat_threads</code>/<code>messages</code>, <code>notifications</code>, plus extended-surface tables for diet plans, referrals, ICU setups, chronic programs, checkup packages, nursing subscriptions, donations, video consults, insurance-card uploads, loyalty accounts, and articles.</p>
+<table>
+<tr><th>Domain</th><th>CuraLink (patient) writes</th><th>CuraLink Plus (staff) writes</th></tr>
+<tr><td>Bookings</td><td>creates, cancels, rates</td><td>accepts, advances status, completes</td></tr>
+<tr><td>Visit status / timeline</td><td>reads (subscribe)</td><td>writes <code>visit_events</code></td></tr>
+<tr><td>Live location</td><td>reads (subscribe)</td><td><b>publishes GPS</b></td></tr>
+<tr><td>Prescriptions</td><td>reads</td><td>doctor creates</td></tr>
+<tr><td>Lab reports</td><td>reads/downloads</td><td>lab uploads</td></tr>
+<tr><td>Chat</td><td>patient messages</td><td>staff replies (+ internal team-chat channels, staff-only)</td></tr>
+<tr><td>Reviews</td><td>writes</td><td>reads (their rating)</td></tr>
+<tr><td>Ambulance</td><td>requests</td><td>paramedic accepts/updates</td></tr>
+</table>
+<p>Realtime via WebSocket / Supabase Realtime / Firebase for: booking status + visit events, the provider-location stream, chat messages, and push notifications (FCM). Suggested endpoints: <code>POST /auth/otp</code>, <code>/auth/verify</code>, <code>GET /me|family|addresses|services</code>, <code>POST /bookings</code> (+ <code>express:true</code>), <code>GET /bookings/:id</code> + realtime, <code>POST /bookings/:id/rate</code>, <code>POST /payments/order</code> + webhook, <code>POST /ambulance</code>, <code>POST /lab-orders</code>, <code>POST /second-opinion</code>.</p>
+
+<h2>8 · Assets</h2>
+<p><b>Fonts:</b> Bricolage Grotesque + Inter (Google Fonts). <b>Icons:</b> Feather/Lucide line set — map to <code>lucide-react-native</code>. <b>Map:</b> prototype uses a keyless map embed of Kondapur, Hyderabad; production needs a real Maps SDK + live provider GPS (CuraLink Plus's map screens already run on Leaflet/OSM — same contract, easy to mirror). <b>Content:</b> all names/addresses/prices are realistic Indian seed data (Priya, Rajesh, Meera, Aarav, Simba; Jubilee Hills/Kondapur/Madhapur; ₹ Indian grouping) — safe to reuse as seed data.</p>
+
+<h2>9 · Implementation order (suggested)</h2>
+<ol>
+<li>Backend schema + auth (OTP) + seed data — coordinate field-for-field with the CuraLink Plus team so both apps ship against one contract.</li>
+<li>Design tokens + component library (buttons, fields, cards, pills, nav, sheet, toast, skeleton).</li>
+<li>Onboarding/auth → Home shell + bottom nav.</li>
+<li>Booking flow + instant/express booking + Razorpay.</li>
+<li><b>Live visit tracking + realtime + provider-GPS contract</b> — build this in lockstep with CuraLink Plus's En-route/Transport screens; it is the same stream on both ends.</li>
+<li>Profile/family, history, prescriptions, wallet.</li>
+<li>Extended surfaces: vitals, care plan, insurance, labs, pharmacy, plans, reviews, ambulance, medical team, second opinion, and the remaining 20+ long-tail screens.</li>
+<li>Support/settings/notifications, dark mode.</li>
+</ol>
+
+<div class="warn"><b>Build note:</b> the prototype's <code>CuraLink.dc.html</code> is a design reference (inline-styled Design Component), not production code — recreate pixel-accurately in your target codebase (React Native/Expo + TypeScript is the recommended target) rather than porting the file directly.</div>
+
+</x-import>
+</div>
+</x-dc>
+</body>
+</html>

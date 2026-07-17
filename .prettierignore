@@ -1,0 +1,6 @@
+node_modules
+.turbo
+.expo
+dist
+pnpm-lock.yaml
+design_handoff_curalink

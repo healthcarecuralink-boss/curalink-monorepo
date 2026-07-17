@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EDEFF2;font-family:Inter,sans-serif;}
+doc-page:not(:defined){visibility:hidden}
+h1,h2,h3{font-family:'Plus Jakarta Sans',sans-serif;color:#0A1628;text-wrap:balance}
+h1{font-size:30px;font-weight:800;margin:0 0 6px} h2{font-size:20px;font-weight:800;margin:36px 0 12px;padding-top:14px;border-top:2px solid #E4E8EC}
+h3{font-size:15.5px;font-weight:700;margin:20px 0 8px}
+p,li{font-size:13.5px;line-height:1.65;color:#33404F;text-wrap:pretty}
+code{background:#F0F2F5;padding:1px 6px;border-radius:5px;font-size:12.5px;color:#0B5A45}
+table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:12.5px;margin:10px 0}
+th{background:#F7F8FA;text-align:left;padding:7px 10px;font-weight:700;color:#33404F;border:1px solid #E4E8EC;word-wrap:break-word;overflow-wrap:break-word}
+td{padding:7px 10px;border:1px solid #E4E8EC;color:#33404F;vertical-align:top;word-wrap:break-word;overflow-wrap:break-word}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700;margin-right:4px}
+.imgrow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0 4px}
+.imgrow img{width:100%;border-radius:12px;border:1px solid #E4E8EC;display:block}
+.imgcap{font-size:11px;color:#5B6B7F;margin-top:5px;text-align:center;margin-bottom:10px}
+.imgcapgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+.callout{background:#E8F5F0;border-radius:10px;padding:12px 15px;font-size:13px;color:#0B5A45;margin:10px 0}
+.warn{background:#FEF3E2;border-radius:10px;padding:12px 15px;font-size:13px;color:#7A4A0F;margin:10px 0}
+.fixed{background:#FCE8E8;border-radius:10px;padding:12px 15px;font-size:13px;color:#7A1010;margin:10px 0}
+</style>
+</helmet>
+
+<template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#0F7A5E"/><text x="50" y="58" font-size="34" fill="#fff" text-anchor="middle" font-family="sans-serif">CL+</text></svg></template>
+
+<div style="min-height:100vh;padding:36px 16px;display:flex;justify-content:center">
+<x-import component-from-global-scope="doc-page" from="./doc-page.js" size="letter" margin="0.75in" hint-size="816px,1056px">
+
+<h1>CuraLink Plus — Developer Handoff</h1>
+<p style="font-size:14px;color:#5B6B7F;margin-top:0">Staff/provider app · shares one backend with the CuraLink consumer app · 6 roles · React Native target</p>
+
+<div class="callout"><b>Shared backend, one source of truth:</b> CuraLink (consumer) and CuraLink Plus (this app) read/write the <b>same</b> data store. A job accepted here is the same booking the family sees in CuraLink; a nurse's live GPS published from the Visit screens is the same feed the family's tracking map consumes; a prescription/lab report uploaded here lands in the family's Health Records tab. Treat every entity below as shared, not duplicated per app. See the companion <b>CuraLink — Developer Handoff</b> document for the consumer side of this same contract.</p>
+
+<h2>1 · Roles &amp; personas (6)</h2>
+<table>
+<tr><th>Role</th><th>Share of usage (assumed)</th><th>Core loop</th></tr>
+<tr><td><b>Nurse</b></td><td>~45%</td><td>Go on duty → accept job → en route → arrive → run visit (vitals/notes/meds/labs) → complete → leave handoff note → paid</td></tr>
+<tr><td><b>Doctor</b></td><td>~10%</td><td>Teleconsult queue → video call → prescribe → post-consult notes</td></tr>
+<tr><td><b>Vet</b></td><td>~5%</td><td>Same as Nurse, pet-flavored job cards (species/breed fields)</td></tr>
+<tr><td><b>Partner Admin</b></td><td>~20%</td><td>Dashboard → live dispatch map → manage team (incl. pharmacy &amp; ambulance partners) → billing/compliance/analytics</td></tr>
+<tr><td><b>Pharmacy Partner</b></td><td>growing</td><td>Toggle accepting → review order (per-item stock check + substitution) → prepare → ready-for-pickup (rider code) → picked up → completed; track order history, reviews, low-stock alerts</td></tr>
+<tr><td><b>Ambulance Partner</b></td><td>growing</td><td>Go on duty → accept emergency request → en route to pickup → arrived → transporting → hospital handoff → completed; trip history, crew &amp; vehicle profile</td></tr>
+</table>
+<p>Role is selected once at onboarding (<code>state.role</code>) and drives credential copy, home dashboard layout, bottom-nav tabs, and role color throughout — see §6. <b>Accounts can now hold more than one role</b> — see §4.</p>
+
+<h2>2 · Screen inventory</h2>
+<h3>Shared onboarding &amp; auth (all roles)</h3>
+<p>Splash → Welcome/role picker → Login → Signup → Phone+OTP → Professional details (2 steps, role-aware credential labels) → Bank details → Verification pending → Approved → Availability setup → role Home.</p>
+<h3>Nurse / Vet</h3>
+<p>Home (on-duty/off-duty/active-visit states) → Jobs list → Job detail (real Leaflet/OSM map) → Job accepted → En route (live map) → Arrived → Visit in progress (Vitals / Notes / Medications / Labs / Photos tabs) → Complete-visit checklist → Visit completed (rating + <b>handoff note to care team</b>) → Schedule → Set availability → Time-off → Earnings (+detail, withdraw, <b>payout methods</b>, <b>payout history</b>, tax docs, tips) → Profile (+documents, reviews, preferences, training) → <b>Team chat</b> → <b>Add another role</b>.</p>
+<h3>Doctor</h3>
+<p>Home (teleconsult queue) → Incoming teleconsult → Video consult → Prescription writer → Prescription review/sign → Post-consult notes → Prescriptions history.</p>
+<h3>Pharmacy Partner</h3>
+<p>Home (accepting toggle, today stats, pickup-map teaser, incoming orders) → Orders (Active/History tabs) → Order detail (per-item in-stock/out-of-stock toggle + substitute-brand text field) → Fulfillment stepper (Preparing → Ready → Picked up → Completed, with rider pickup code) → Pickup map (real map) → Inventory (low-stock alerts) → Reviews/ratings received.</p>
+<h3>Ambulance Partner</h3>
+<p>Home (on-duty toggle, today stats, live-map teaser, emergency requests) → Requests (Active/History tabs) → Request detail (patient, reason, pickup address, nearest hospital) → Transport flow (En route → Arrived → Transporting to hospital → Completed, real live map, publishes GPS) → Live map → Trip history → Vehicle &amp; crew (driver, paramedic, equipment checklist) → Reviews/ratings received.</p>
+<h3>Partner Admin</h3>
+<p>Dashboard (hero metrics + Pharmacy network / Ambulance fleet cards) → Live dispatch map (real map; plots nurse jobs = green, pharmacy pickups = blue, ambulance trips = red) → Team roster (includes pharmacy &amp; ambulance partners) → Team member detail → Add team member → Reassign job → Billing → Payouts → Compliance → Analytics (jobs/revenue/response-time trends + Pharmacy fulfillment trend + Ambulance response-time trend) → Reports export → Pharmacy network screen → Ambulance fleet screen.</p>
+<h3>Shared utility</h3>
+<p>Notifications (+ detail, incl. pharmacy/ambulance events), Help center, Chat with ops support (real Claude call), Cura Assistant (real Claude, robust system prompt, quick-prompt chips), Settings (incl. <b>dark mode</b>, language), Emergency/SOS (with in-flow Request-ambulance shortcut), Partner-pharmacy locator, Design system reference (now includes pharmacy/ambulance colors &amp; role badges).</p>
+
+<h2>3 · Real map integration</h2>
+<p>All 8 map-bearing screens (Job detail, En route, Live dispatch, Partner-pharmacy locator, Ambulance SOS-request, Pharmacy pickup map, Ambulance transport, Ambulance live map) use <b>Leaflet + OpenStreetMap tiles</b> — genuine pan/zoom/pin rendering, no API key required. Hyderabad-area coordinates are used throughout for realism (Kondapur, Jubilee Hills, Banjara Hills, HITEC City). Swapping to Google Maps SDK in production is a drop-in replacement behind the same marker/route data shape — see <code>leaflet-map.jsx</code>.</p>
+<div class="imgrow">
+<img src="screenshots/handoff2/nurse-job-enroute-map.png"><img src="screenshots/handoff2/admin-live-dispatch-map.png"><img src="screenshots/handoff2/ambulance-transport-map.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Nurse — En route (live map)</div>
+<div class="imgcap">Admin — Live dispatch (green=nurse, blue=pharmacy, red=ambulance)</div>
+<div class="imgcap">Ambulance — Transport phase map</div>
+</div>
+
+<h2>4 · Multi-role accounts</h2>
+<p>A single verified identity can now hold more than one role (e.g. a nurse who is also a Partner Admin) without re-onboarding. <b>Profile → Your roles</b> lists active roles with a <code>+ Add role</code> flow that activates instantly (same bank details, same verified documents). A role pill next to the date on Home opens an in-place switcher that swaps the entire active dashboard to any held role — no logout/login round-trip.</p>
+<div class="imgrow" style="grid-template-columns:1fr 1fr">
+<img src="screenshots/handoff2/multi-role-switcher.png"><img src="screenshots/handoff2/dark-mode-home.png">
+</div>
+<div class="imgcapgrid" style="grid-template-columns:1fr 1fr">
+<div class="imgcap">Home — role switcher open (Nurse ↔ Partner Admin)</div>
+<div class="imgcap">Dark mode — Home (all surfaces/text theme-aware)</div>
+</div>
+
+<h2>5 · Team chat &amp; in-app payouts</h2>
+<p><b>Team chat</b> — group/team channels distinct from 1:1 ops support: per-patient Care Team (nurse + doctor + admin on today's active visit), shift-handoff broadcasts, and admin escalation threads. Reached from a header icon on Home and from Profile. The <b>Visit Completed</b> screen now includes an optional handoff-note field that posts directly into the Care Team channel — closing the loop between finishing a visit and briefing whoever covers next.</p>
+<p><b>In-app payouts</b> — linked payout methods (bank account / UPI) with a default + backup badge, method selection at Withdraw, and an itemized <b>Payout history</b> ledger (date, method, amount, status).</p>
+<div class="imgrow">
+<img src="screenshots/handoff2/team-chat-room.png"><img src="screenshots/handoff2/payout-methods.png"><img src="screenshots/handoff2/payout-history.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Team chat — Care team channel</div>
+<div class="imgcap">Payout methods — default/backup</div>
+<div class="imgcap">Payout history — itemized ledger</div>
+</div>
+
+<h2>6 · Design system — "Clinical Confidence"</h2>
+<table>
+<tr><th>Token</th><th>Value</th><th>Usage</th></tr>
+<tr><td>Primary teal</td><td><span class="tag" style="background:#0F7A5E;color:#fff">#0F7A5E</span></td><td>CTAs, nurse/vet role color, active states</td></tr>
+<tr><td>Amber accent</td><td><span class="tag" style="background:#F4A23B;color:#fff">#F4A23B</span></td><td>Ratings/tips highlights</td></tr>
+<tr><td>Doctor blue</td><td><span class="tag" style="background:#3B82F6;color:#fff">#3B82F6</span></td><td>Doctor role color</td></tr>
+<tr><td>Vet purple</td><td><span class="tag" style="background:#8B5CF6;color:#fff">#8B5CF6</span></td><td>Vet role color</td></tr>
+<tr><td>Admin slate</td><td><span class="tag" style="background:#64748B;color:#fff">#64748B</span></td><td>Admin role color</td></tr>
+<tr><td>Pharmacy sky</td><td><span class="tag" style="background:#0EA5E9;color:#fff">#0EA5E9</span></td><td>Pharmacy role color, order accents</td></tr>
+<tr><td>Ambulance red</td><td><span class="tag" style="background:#DC3545;color:#fff">#DC3545</span></td><td>Ambulance role color, urgent/emergency accents</td></tr>
+<tr><td>Ink / Surface / Background</td><td>#10192B / #FFFFFF / #F7F8FA</td><td>Light mode text/card/page. Dark mode: #F5F3EF / #131E33 / #0A1628</td></tr>
+</table>
+<p>Type: Plus Jakarta Sans (headings, 600–800) + Inter (body/numbers, 400–700). Radius: 10–16px. Shadows minimal — hairline borders do most of the elevation work. Full live reference at the in-app <b>Design system</b> screen (Settings → "Design system reference").</p>
+
+<h2>7 · Screens (representative captures)</h2>
+<div class="imgrow">
+<img src="screenshots/handoff2/nurse-home.png"><img src="screenshots/handoff2/nurse-earnings.png"><img src="screenshots/handoff2/doctor-home.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Nurse — Home (on duty, active job)</div>
+<div class="imgcap">Nurse — Earnings breakdown</div>
+<div class="imgcap">Doctor — Home (teleconsult queue)</div>
+</div>
+<div class="imgrow">
+<img src="screenshots/handoff2/admin-dashboard.png"><img src="screenshots/handoff2/pharmacy-home.png"><img src="screenshots/handoff2/pharmacy-order-detail.png">
+</div>
+<div class="imgcapgrid">
+<div class="imgcap">Partner Admin — Dashboard</div>
+<div class="imgcap">Pharmacy — Home (accepting orders)</div>
+<div class="imgcap">Pharmacy — Order detail (stock check + fulfill)</div>
+</div>
+<div class="imgrow">
+<img src="screenshots/handoff2/ambulance-home.png"><img src="screenshots/handoff2/design-system.png">
+</div>
+<div class="imgcapgrid" style="grid-template-columns:1fr 1fr">
+<div class="imgcap">Ambulance — Home (on duty, emergency requests)</div>
+<div class="imgcap">Design system reference — palette, type, components</div>
+</div>
+
+<h2>8 · Shared backend — entity contract</h2>
+<p>These are the entities both apps read/write. Field names below match the prototype's in-memory shape; map 1:1 onto your real schema.</p>
+<table>
+<tr><th>Entity</th><th>Key fields</th><th>Written by</th><th>Read by (CuraLink consumer)</th></tr>
+<tr><td><b>User / Professional</b></td><td>id, role(s) (nurse/doctor/vet/admin/pharmacy/ambulance — now an array for multi-role accounts), credentials, docs[], bankDetails, payoutMethods[], availability, rating</td><td>Plus onboarding / Add-role flow</td><td>Displayed on booking confirmations, "your nurse" cards</td></tr>
+<tr><td><b>Job / Visit</b></td><td>id, patientInit/patientFull, service, condition, allergies, status (new→accepted→en_route→arrived→in_progress→completed), vitals{}, notes, medsGiven[], labReports[], handoffNote, payout</td><td>Plus (accept/advance/vitals/notes/labs/handoff note)</td><td>Consumer live-tracking screen, visit report, health records</td></tr>
+<tr><td><b>GPS ping</b></td><td>jobId or ambulanceReqId, lat/lng, ts</td><td>Plus (published continuously during En route / Transport)</td><td>Consumer "track your nurse/ambulance" map</td></tr>
+<tr><td><b>Prescription</b></td><td>id, patientId, meds[{name,dose,duration}], advice, doctorSignature</td><td>Plus (Doctor → Prescription writer)</td><td>Consumer Health Records, pharmacy order source</td></tr>
+<tr><td><b>PharmacyOrder</b></td><td>id, nurseId, patientInit, items[{name,qty,inStock,substitute}], status (pending→preparing→ready→picked_up→completed/declined), pickupCode</td><td>Plus nurse (creates via "Send prescription here") + Plus pharmacy (fulfills)</td><td>Consumer order/medicine tracking</td></tr>
+<tr><td><b>AmbulanceRequest</b></td><td>id, requester, patientInit, type (BLS/ALS), reason, pickupAddr, hospital, status (pending→accepted→completed/declined)</td><td>Plus nurse/doctor (SOS→Request ambulance) or Consumer app directly</td><td>Consumer emergency-tracking screen</td></tr>
+<tr><td><b>TeamRoster</b></td><td>id, name, role, status, rating, todayEarnings, docsOk</td><td>Plus admin actions (assign/reassign)</td><td>Admin-only (not consumer-facing)</td></tr>
+<tr><td><b>ChatChannel / ChatMessage</b></td><td>id, type (care-team/handoff/escalation/ops-1:1), members[], messages[{who,text,ts}]</td><td>Plus (all roles post; nurse handoff notes auto-post)</td><td>Not consumer-facing (staff-only) except where a care-team message references a shared Visit</td></tr>
+<tr><td><b>PayoutMethod / PayoutRecord</b></td><td>method: bank/UPI + isDefault; record: date, amount, method, status</td><td>Plus (professional links method; system generates payout records)</td><td>Admin-only (Payouts screen aggregates across team)</td></tr>
+</table>
+<p>Note the deliberate symmetry: a <code>PharmacyOrder</code> created from the nurse-side "Partner pharmacy locator → Send prescription here" flow is the exact record a Pharmacy Partner sees in their Orders queue. An <code>AmbulanceRequest</code> raised from SOS is the exact record an Ambulance Partner sees in their Requests queue. Build these as one table each, not per-app copies.</p>
+
+<h2>9 · Key flows to implement first</h2>
+<ol>
+<li><b>Job accept → visit → payout</b> (nurse/vet) — the richest loop; vitals/notes/meds/labs/handoff-note all write onto the same Visit record the consumer app's report view reads.</li>
+<li><b>Live GPS publish/consume</b> — Plus's En-route and Ambulance-Transport screens must publish a location stream; CuraLink's tracking screen must be a live subscriber to the same stream, keyed by jobId/requestId. Prototype uses Leaflet/OSM; production can swap to Google Maps SDK behind the same contract.</li>
+<li><b>Pharmacy fulfillment loop</b> — order created (nurse or consumer) → pharmacy accepts with per-item stock/substitute → prepares → rider pickup code → completed. Pickup code should be a real generated OTP server-side, not a static demo value.</li>
+<li><b>Ambulance dispatch loop</b> — request created → nearest on-duty ambulance partners notified → accept → 3-phase transport with live map → hospital handoff → fare settlement.</li>
+<li><b>Multi-role account switching</b> — one identity, N active roles; switching roles must swap dashboard/permissions instantly without a fresh auth round-trip.</li>
+<li><b>Team chat channels</b> — care-team channels should auto-create per active Visit and auto-archive on completion; handoff notes are a message type, not a separate table.</li>
+<li><b>Cura Assistant &amp; ops chat</b> — both call <code>window.claude.complete</code> in the prototype; in production, proxy through your backend so you can inject real patient/job context server-side and keep API keys off-device.</li>
+</ol>
+
+<h2>10 · Known-fixed issues (for QA parity)</h2>
+<div class="fixed"><b>Bottom tab bar was rendering nowhere in the prototype</b> for its entire build history — the visibility condition referenced a screen key (<code>nav</code>) that was never a real route, so it silently evaluated false on every screen. Fixed by computing <code>showBottomNav</code> from an explicit list of tab-root screens. If you're porting this prototype's logic 1:1, double check any "is this a root/tab screen" condition against your actual route table rather than a magic string.</div>
+<div class="warn"><b>Template-hole discipline:</b> several early pharmacy/ambulance screens shipped with inline ternaries inside style holes (a conditional expression written directly inside a template placeholder), which this templating engine can't evaluate — properties silently dropped. All such logic was moved into precomputed view-model fields. If your team adopts a similar templating layer, lint for this pattern.</div>
+
+<h2>11 · Open items / suggested next steps</h2>
+<ul>
+<li>Real OTP generation for pharmacy pickup codes and ambulance/visit arrival confirmation (currently static demo values).</li>
+<li>Wire Cura Assistant / ops chat through a backend proxy (currently calls the client-side prototype helper directly).</li>
+<li>Push notification delivery for new orders/requests (currently in-app toast only).</li>
+<li>Swap Leaflet/OSM for Google Maps SDK if brand/product requires it (same marker/route data contract, key-gated).</li>
+<li>Ratings-dispute flow for admins, notification-permission onboarding step, offline/poor-connectivity messaging.</li>
+</ul>
+
+</x-import>
+</div>
+</x-dc>
+</body>
+</html>
