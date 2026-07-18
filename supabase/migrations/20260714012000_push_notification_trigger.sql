@@ -9,12 +9,18 @@ create extension if not exists pg_net;
 -- reasoning, just via a static header instead of a signed webhook, since
 -- Postgres is the caller here, not a third party). Stored in Supabase Vault
 -- since this database role can't set a custom app.settings GUC directly.
--- The exact same value must be set as the INTERNAL_TRIGGER_SECRET function
--- secret (`supabase secrets set INTERNAL_TRIGGER_SECRET=...`).
+--
+-- NEVER put the real secret value here -- this repo is public and migrations
+-- are permanent git history. This placeholder seeds fresh/local environments
+-- only. On any real environment, rotate immediately after this migration
+-- applies via:
+--   supabase db query --linked "select vault.update_secret((select id from vault.secrets where name = 'internal_trigger_secret'), '<new-value>')"
+-- and set the matching Edge Function secret out-of-band (never committed):
+--   supabase secrets set INTERNAL_TRIGGER_SECRET=<same-new-value>
 select vault.create_secret(
-  '3b2df083d4c268b0a625ad94f76529e77296fb4d3be90ac958694a5a5cb4811a',
+  'placeholder-rotate-immediately-after-apply',
   'internal_trigger_secret',
-  'Shared secret so send-push-notification trusts calls from trigger_push_notification'
+  'Shared secret so send-push-notification trusts calls from trigger_push_notification -- rotate out-of-band, never commit the real value'
 );
 
 create or replace function public.trigger_push_notification()
