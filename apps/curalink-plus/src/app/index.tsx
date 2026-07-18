@@ -71,7 +71,9 @@ export default function SplashScreen() {
     if (isLoading) return;
     const remaining = Math.max(0, MIN_SPLASH_MS - (Date.now() - startedAt));
     const timer = setTimeout(() => {
-      router.replace(session ? "/(tabs)/home" : "/welcome");
+      // No login/OTP flow anymore -- initSessionListener always establishes
+      // a (dev-mode anonymous) session before this fires.
+      router.replace("/(tabs)/home");
     }, remaining);
     return () => clearTimeout(timer);
   }, [isLoading, session, startedAt]);
@@ -79,7 +81,7 @@ export default function SplashScreen() {
   return (
     <Pressable
       style={styles.container}
-      onPress={() => !isLoading && router.replace(session ? "/(tabs)/home" : "/welcome")}
+      onPress={() => !isLoading && router.replace("/(tabs)/home")}
     >
       <Animated.View style={[styles.logoBox, { transform: [{ scale: pulse }] }]}>
         <Stethoscope size={40} color={colors.primary} strokeWidth={1.8} />

@@ -4,6 +4,9 @@ export { supabase } from "./supabaseClient";
 export {
   verifyMsg91AccessToken,
   signInWithPhonePassword,
+  signInWithGoogle,
+  createSessionFromUrl,
+  updatePhoneNumber,
   signOut,
   fetchProfile,
   requestRole,
@@ -11,6 +14,7 @@ export {
   toMsg91Identifier,
   toWhatsAppLink,
   recordConsent,
+  hasRecordedConsent,
 } from "./auth";
 export { useSessionStore, initSessionListener } from "./sessionStore";
 
