@@ -17,6 +17,13 @@ interface SessionState {
   // Supabase Auth, it just changes which role-scoped UI/queries are active.
   activeRole: ProfessionalRole | null;
   isLoading: boolean;
+  // Google sign-in can navigate away from the screen that's actually
+  // running the exchange (Expo Router jumps to auth-callback.tsx the
+  // instant the bare deep link lands, before that promise settles) -- so a
+  // thrown error there has nowhere local to be shown. Stashed here instead,
+  // so whichever screen is on screen when it happens can display it.
+  authError: string | null;
+  setAuthError: (message: string | null) => void;
   setActiveRole: (role: ProfessionalRole) => void;
   refreshProfile: () => Promise<void>;
 }
@@ -26,6 +33,9 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   profile: null,
   activeRole: null,
   isLoading: true,
+  authError: null,
+
+  setAuthError: (message) => set({ authError: message }),
 
   setActiveRole: (role) => {
     set({ activeRole: role });
