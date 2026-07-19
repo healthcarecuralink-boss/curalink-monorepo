@@ -301,4 +301,27 @@ update public.professional_profiles set rating = 4.6, rating_count = 118 where p
 update public.professional_profiles set rating = 4.9, rating_count = 980 where profile_id = '00000000-0000-0000-0001-000000000016'; -- Rapid Response Ambulance
 update public.professional_profiles set rating = 4.7, rating_count = 505 where profile_id = '00000000-0000-0000-0001-000000000017'; -- Sanjeevani Ambulance Fleet
 
+-- -----------------------------------------------------------------------
+-- 16. Dev-only login bypass: unlike the identities in section 1, this one
+--     has a real, known password so curalink-plus's __DEV__-gated "Skip
+--     OTP, sign in as test nurse" button (login.tsx) can sign straight in
+--     -- for QA when MSG91 OTP delivery isn't available/working.
+-- -----------------------------------------------------------------------
+insert into auth.users (
+  instance_id, id, aud, role, phone, encrypted_password,
+  phone_confirmed_at, confirmation_token, recovery_token,
+  email_change_token_new, email_change,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+values (
+  '00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000001', 'authenticated', 'authenticated',
+  '911234500000', crypt('TestNurse@123', gen_salt('bf')), now(), '', '', '', '',
+  '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Nurse"}', now(), now()
+)
+on conflict (id) do nothing;
+
+update public.profiles set roles = array['nurse'] where id = 'dddddddd-0000-0000-0000-000000000001';
+update public.professional_credentials set verification_status = 'approved', docs = '[{"type":"id_proof","status":"approved"}]'::jsonb where profile_id = 'dddddddd-0000-0000-0000-000000000001';
+update public.professional_profiles set bio = 'Dummy test nurse account for QA', years_experience = 5, is_on_duty = true, service_area = 'Kondapur', lat = 17.4615, lng = 78.3556 where profile_id = 'dddddddd-0000-0000-0000-000000000001';
+
 commit;
