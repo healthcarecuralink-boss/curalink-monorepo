@@ -19,6 +19,11 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // Without this, supabase-js defaults to the implicit flow, whose OAuth
+    // redirect carries tokens in the URL *fragment* -- which never survives
+    // the round-trip into a native deep link reliably. PKCE returns a
+    // ?code= query param instead, which createSessionFromUrl exchanges.
+    flowType: "pkce",
   },
 });
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
-import { Sentry } from "../utils/sentry";
+import { wrapRootLayout } from "../utils/sentry";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -65,4 +65,4 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default wrapRootLayout(RootLayout);

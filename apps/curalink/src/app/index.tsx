@@ -7,10 +7,9 @@ import { curalinkFonts, useTheme } from "@curalink/ui";
 
 const MIN_SPLASH_MS = 1400;
 
-// Splash auto-advances (README onboarding order: Splash -> Welcome/Login ->
-// ... ). Where it lands depends on session state: signed out -> Welcome;
-// signed in but no family_members yet ("care setup" incomplete) -> Care
-// setup; otherwise -> Home.
+// Splash auto-advances. Where it lands depends on session state: signed
+// out -> Auth (Google or phone); signed in but no family_members yet
+// ("care setup" incomplete) -> Care setup; otherwise -> Home.
 export default function SplashScreen() {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -78,7 +77,7 @@ export default function SplashScreen() {
     const remaining = Math.max(0, MIN_SPLASH_MS - elapsed);
     const timer = setTimeout(() => {
       if (!session) {
-        router.replace("/welcome");
+        router.replace("/auth");
         return;
       }
       // Home screen itself checks for a "self" family member and can send
@@ -91,7 +90,7 @@ export default function SplashScreen() {
   }, [isLoading, session, startedAt]);
 
   return (
-    <Pressable style={styles.container} onPress={() => !isLoading && router.replace(session ? "/(tabs)/home" : "/welcome")}>
+    <Pressable style={styles.container} onPress={() => !isLoading && router.replace(session ? "/(tabs)/home" : "/auth")}>
       <Animated.View style={[styles.logoRing, { transform: [{ scale: pulse }] }]}>
         <View style={styles.logo}>
           <HeartPulse size={46} color={colors.primary} strokeWidth={2} />
