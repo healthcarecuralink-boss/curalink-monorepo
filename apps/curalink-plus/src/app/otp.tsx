@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Phone } from "lucide-react-native";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { ArrowLeft, Phone } from "lucide-react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CONSENT_VERSION,
   fetchProfessionalCredentials,
@@ -26,6 +26,19 @@ export default function OtpScreen() {
       () =>
         StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, paddingTop: 100, alignItems: "center" },
+    backButton: {
+      position: "absolute",
+      top: 56,
+      left: 24,
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
     iconChip: {
       width: 56,
       height: 56,
@@ -38,6 +51,7 @@ export default function OtpScreen() {
     title: { fontFamily: curalinkPlusFonts.heading, fontSize: 24, color: colors.ink },
     subtitle: { fontSize: 13.5, color: colors.muted, marginTop: 8, textAlign: "center" },
     subtitleAccent: { fontWeight: "700", color: colors.ink },
+    changeLink: { fontWeight: "700", color: colors.primary },
     boxRow: { flexDirection: "row", gap: 8, marginTop: 28 },
     box: {
       width: 44,
@@ -145,6 +159,16 @@ export default function OtpScreen() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={styles.backButton}
+        hitSlop={8}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={18} color={colors.ink} strokeWidth={2} />
+      </Pressable>
+
       <View style={styles.iconChip}>
         <Phone size={24} color={colors.primary} strokeWidth={1.8} />
       </View>
@@ -152,6 +176,10 @@ export default function OtpScreen() {
       <Text style={styles.subtitle}>
         Enter the {CODE_LENGTH}-digit code sent to{" "}
         <Text style={styles.subtitleAccent}>{toE164IndianPhone(phone ?? "")}</Text>
+        {"  "}
+        <Text style={styles.changeLink} onPress={() => router.back()}>
+          Change
+        </Text>
       </Text>
 
       <View style={styles.boxRow} onTouchEnd={() => inputRef.current?.focus()}>

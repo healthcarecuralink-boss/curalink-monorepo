@@ -29,7 +29,6 @@ export function TextField({ label, error, phonePrefix, isPassword, style, ...inp
             backgroundColor: colors.surface,
             borderColor: isFocused ? colors.primary : colors.border,
           },
-          isFocused && { shadowColor: colors.primary, shadowOpacity: 0.12, shadowRadius: 3, elevation: 1 },
         ]}
       >
         {phonePrefix ? (
