@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Briefcase } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   fetchActiveJob,
   fetchAvailableJobs,
   fetchJobHistory,
+  subscribeToAvailableJobs,
   useSessionStore,
 } from "@curalink/api-client";
 import { EmptyState, ErrorState, Skeleton, StatusPill, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
@@ -64,6 +65,16 @@ export default function JobsScreen() {
   const activeRole = useSessionStore((s) => s.activeRole);
   const userId = session?.user.id;
   const accent = activeRole ? roleAccents[activeRole] : colors.primary;
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = subscribeToAvailableJobs(() => {
+      queryClient.invalidateQueries({ queryKey: ["availableJobs", activeRole] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient, activeRole]);
 
   const {
     data: available,

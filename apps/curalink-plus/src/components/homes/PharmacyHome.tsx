@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { Package, Percent, ShoppingBag } from "lucide-react-native";
 import { StyleSheet, Switch, Text, View } from "react-native";
-import { fetchIncomingPharmacyOrders, fetchProfessionalProfile, setOnDuty, useSessionStore } from "@curalink/api-client";
+import {
+  fetchIncomingPharmacyOrders,
+  fetchProfessionalProfile,
+  setOnDuty,
+  subscribeToIncomingPharmacyOrders,
+  useSessionStore,
+} from "@curalink/api-client";
 import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 
 const accent = roleAccents.pharmacy;
@@ -46,6 +52,15 @@ export function PharmacyHome() {
     queryFn: () => fetchIncomingPharmacyOrders(),
     enabled: Boolean(professionalProfile?.is_on_duty),
   });
+
+  useEffect(() => {
+    const channel = subscribeToIncomingPharmacyOrders(() => {
+      queryClient.invalidateQueries({ queryKey: ["incomingPharmacyOrders"] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
 
   const isAccepting = professionalProfile?.is_on_duty ?? false;
 

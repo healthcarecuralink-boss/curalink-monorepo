@@ -124,6 +124,34 @@ export async function fetchIncomingAmbulanceRequests(): Promise<AmbulanceRequest
   return data;
 }
 
+// Realtime for the three "open pool" tables (unassigned bookings/orders/
+// requests any eligible professional can claim). postgres_changes only
+// supports a single-column filter, and "unassigned and pending" is a
+// two-column condition, so these subscribe unfiltered and let the caller
+// refetch (RLS still confines what an individual row event actually reveals
+// -- see unassigned_job_visibility migration). Caller unsubscribes on unmount
+// (same pattern as subscribeToProviderLocation).
+export function subscribeToAvailableJobs(onChange: () => void) {
+  return supabase
+    .channel("bookings:open-pool")
+    .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, onChange)
+    .subscribe();
+}
+
+export function subscribeToIncomingPharmacyOrders(onChange: () => void) {
+  return supabase
+    .channel("pharmacy_orders:open-pool")
+    .on("postgres_changes", { event: "*", schema: "public", table: "pharmacy_orders" }, onChange)
+    .subscribe();
+}
+
+export function subscribeToIncomingAmbulanceRequests(onChange: () => void) {
+  return supabase
+    .channel("ambulance_requests:open-pool")
+    .on("postgres_changes", { event: "*", schema: "public", table: "ambulance_requests" }, onChange)
+    .subscribe();
+}
+
 export async function fetchBookingReviews(professionalId: string): Promise<Booking[]> {
   const { data, error } = await supabase
     .from("bookings")

@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { ChevronRight, Gauge, Route, Siren, Truck } from "lucide-react-native";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
-import { fetchIncomingAmbulanceRequests, fetchProfessionalProfile, setOnDuty, useSessionStore } from "@curalink/api-client";
+import {
+  fetchIncomingAmbulanceRequests,
+  fetchProfessionalProfile,
+  setOnDuty,
+  subscribeToIncomingAmbulanceRequests,
+  useSessionStore,
+} from "@curalink/api-client";
 import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 
 const accent = roleAccents.ambulance;
@@ -57,6 +63,15 @@ export function AmbulanceHome() {
     queryFn: () => fetchIncomingAmbulanceRequests(),
     enabled: Boolean(professionalProfile?.is_on_duty),
   });
+
+  useEffect(() => {
+    const channel = subscribeToIncomingAmbulanceRequests(() => {
+      queryClient.invalidateQueries({ queryKey: ["incomingAmbulanceRequests"] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
 
   const isOnDuty = professionalProfile?.is_on_duty ?? false;
 

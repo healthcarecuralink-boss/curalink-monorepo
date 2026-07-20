@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { ChevronRight, FileText, IndianRupee, MessageSquareText, Star, Video } from "lucide-react-native";
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
-import { fetchAvailableJobs, fetchProfessionalProfile, setOnDuty, useSessionStore } from "@curalink/api-client";
+import {
+  fetchAvailableJobs,
+  fetchProfessionalProfile,
+  setOnDuty,
+  subscribeToAvailableJobs,
+  useSessionStore,
+} from "@curalink/api-client";
 import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 
 const accent = roleAccents.doctor;
@@ -56,6 +62,15 @@ export function DoctorHome() {
     queryFn: () => fetchAvailableJobs("doctor"),
     enabled: Boolean(professionalProfile?.is_on_duty),
   });
+
+  useEffect(() => {
+    const channel = subscribeToAvailableJobs(() => {
+      queryClient.invalidateQueries({ queryKey: ["availableJobs", "doctor"] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
 
   const isOnDuty = professionalProfile?.is_on_duty ?? false;
 

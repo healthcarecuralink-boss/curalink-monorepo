@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { IndianRupee, MapPin, Star } from "lucide-react-native";
@@ -8,6 +8,7 @@ import {
   fetchAvailableJobs,
   fetchProfessionalProfile,
   setOnDuty,
+  subscribeToAvailableJobs,
   useSessionStore,
   type ProfessionalRole,
 } from "@curalink/api-client";
@@ -61,6 +62,15 @@ export function NurseVetHome({ role }: { role: Extract<ProfessionalRole, "nurse"
     queryFn: () => fetchAvailableJobs(role),
     enabled: Boolean(professionalProfile?.is_on_duty) && !activeJob,
   });
+
+  useEffect(() => {
+    const channel = subscribeToAvailableJobs(() => {
+      queryClient.invalidateQueries({ queryKey: ["availableJobs", role] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient, role]);
 
   const isOnDuty = professionalProfile?.is_on_duty ?? false;
 

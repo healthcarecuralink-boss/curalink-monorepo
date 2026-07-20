@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Package } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   fetchActivePharmacyOrders,
   fetchIncomingPharmacyOrders,
   fetchPharmacyOrderHistory,
+  subscribeToIncomingPharmacyOrders,
   useSessionStore,
 } from "@curalink/api-client";
 import { EmptyState, Skeleton, StatusPill, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
@@ -63,6 +64,16 @@ export default function OrdersScreen() {
   const session = useSessionStore((s) => s.session);
   const userId = session?.user.id;
   const accent = roleAccents.pharmacy;
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = subscribeToIncomingPharmacyOrders(() => {
+      queryClient.invalidateQueries({ queryKey: ["incomingPharmacyOrders"] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
 
   const { data: available } = useQuery({
     queryKey: ["incomingPharmacyOrders"],

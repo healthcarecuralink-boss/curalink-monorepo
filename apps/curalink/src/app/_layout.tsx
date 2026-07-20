@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import { router, Stack } from "expo-router";
 import * as Linking from "expo-linking";
 import { wrapRootLayout } from "../utils/sentry";
 import * as Notifications from "expo-notifications";
@@ -33,6 +33,26 @@ function RootLayout() {
   useEffect(() => initSessionListener(), []);
   const [queryClient] = useState(() => new QueryClient());
   const session = useSessionStore((s) => s.session);
+  const isLoading = useSessionStore((s) => s.isLoading);
+
+  // Root-level, so it fires no matter which screen is on top when sign-out
+  // happens (settings.tsx, profile.tsx, ...) -- without this, the session
+  // clears but nothing navigates away from whatever now-unauthenticated
+  // screen the user was on. Only reacts to an actual logged-in -> logged-out
+  // transition (hadSession ref), so it doesn't fight with index.tsx's own
+  // cold-start redirect while the initial session check is still loading.
+  const hadSession = useRef(false);
+  useEffect(() => {
+    if (isLoading) return;
+    if (session) {
+      hadSession.current = true;
+      return;
+    }
+    if (hadSession.current) {
+      hadSession.current = false;
+      router.replace("/auth");
+    }
+  }, [session, isLoading]);
 
   // Google sign-in redirect handling, root-level and independent of any
   // screen's own mount timing or Expo Router's own routing behavior for the

@@ -1,5 +1,4 @@
 import * as Linking from "expo-linking";
-import * as WebBrowser from "expo-web-browser";
 import { supabase } from "./supabaseClient";
 import type { Profile } from "./types";
 
@@ -102,6 +101,12 @@ export async function signOut() {
 // device. This function's only remaining job is opening the browser and
 // detecting an explicit user cancel.
 export async function signInWithGoogle(): Promise<void> {
+  // Imported lazily -- expo-web-browser is only needed for this one Google
+  // sign-in flow (curalink app), but this whole file is loaded eagerly by
+  // every app that imports @curalink/api-client. A top-level import here
+  // crashed curalink-plus at boot, which never links this native module
+  // since it doesn't offer Google sign-in.
+  const WebBrowser = await import("expo-web-browser");
   const redirectTo = Linking.createURL("auth-callback");
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

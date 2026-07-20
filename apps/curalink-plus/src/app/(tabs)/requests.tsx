@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Siren } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   fetchAmbulanceRequestHistory,
   fetchIncomingAmbulanceRequests,
   fetchActiveAmbulanceJob,
+  subscribeToIncomingAmbulanceRequests,
   useSessionStore,
 } from "@curalink/api-client";
 import { EmptyState, Skeleton, StatusPill, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
@@ -64,6 +65,16 @@ export default function RequestsScreen() {
   const session = useSessionStore((s) => s.session);
   const userId = session?.user.id;
   const accent = roleAccents.ambulance;
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = subscribeToIncomingAmbulanceRequests(() => {
+      queryClient.invalidateQueries({ queryKey: ["incomingAmbulanceRequests"] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
 
   const { data: available } = useQuery({
     queryKey: ["incomingAmbulanceRequests"],

@@ -1,9 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Video } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { fetchActiveJob, fetchAvailableJobs, fetchJobHistory, useSessionStore } from "@curalink/api-client";
+import {
+  fetchActiveJob,
+  fetchAvailableJobs,
+  fetchJobHistory,
+  subscribeToAvailableJobs,
+  useSessionStore,
+} from "@curalink/api-client";
 import { EmptyState, ErrorState, Skeleton, StatusPill, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 
 const tabs = ["incoming", "active", "history"] as const;
@@ -57,6 +63,16 @@ export default function QueueScreen() {
   const session = useSessionStore((s) => s.session);
   const userId = session?.user.id;
   const accent = roleAccents.doctor;
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = subscribeToAvailableJobs(() => {
+      queryClient.invalidateQueries({ queryKey: ["availableJobs", "doctor"] });
+    });
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [queryClient]);
 
   const {
     data: incoming,

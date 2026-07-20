@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "curalink-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "19010"],
+      "cwd": "apps/curalink",
+      "port": 19010
+    },
+    {
+      "name": "curalink-plus-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "19011"],
+      "cwd": "apps/curalink-plus",
+      "port": 19011
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import { router, Stack } from "expo-router";
 import { wrapRootLayout } from "../utils/sentry";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
@@ -30,6 +30,26 @@ function RootLayout() {
   useEffect(() => initSessionListener(), []);
   const [queryClient] = useState(() => new QueryClient());
   const session = useSessionStore((s) => s.session);
+  const isLoading = useSessionStore((s) => s.isLoading);
+
+  // Root-level, so it fires no matter which screen is on top when sign-out
+  // happens (settings.tsx, profile.tsx, ...) -- without this, the session
+  // clears but nothing navigates away from whatever now-unauthenticated
+  // screen the user was on. Only reacts to an actual logged-in -> logged-out
+  // transition (hadSession ref), so it doesn't fire during the initial
+  // session check on cold start.
+  const hadSession = useRef(false);
+  useEffect(() => {
+    if (isLoading) return;
+    if (session) {
+      hadSession.current = true;
+      return;
+    }
+    if (hadSession.current) {
+      hadSession.current = false;
+      router.replace("/login");
+    }
+  }, [session, isLoading]);
 
   useEffect(() => {
     if (session?.user.id) {
