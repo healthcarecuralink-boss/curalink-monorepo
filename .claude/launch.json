@@ -14,6 +14,18 @@
       "runtimeArgs": ["expo", "start", "--web", "--port", "19011"],
       "cwd": "apps/curalink-plus",
       "port": 19011
+    },
+    {
+      "name": "curalink-dist",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-dist.mjs", "apps/curalink", "4173"],
+      "port": 4173
+    },
+    {
+      "name": "curalink-plus-dist",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-dist.mjs", "apps/curalink-plus", "4174"],
+      "port": 4174
     }
   ]
 }

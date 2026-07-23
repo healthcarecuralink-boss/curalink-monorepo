@@ -1,0 +1,33 @@
+{
+  "name": "CuraLink — Home Healthcare",
+  "short_name": "CuraLink",
+  "description": "Book nurses, doctors, lab tests and ambulances to your door. Trusted home healthcare across India.",
+  "start_url": "/app",
+  "scope": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAF8",
+  "theme_color": "#00C27C",
+  "lang": "en-IN",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "/app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

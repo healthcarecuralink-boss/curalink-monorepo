@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<!--
+  Web shell for the CuraLink Plus partner app at curalinkplus.co.in/app.
+
+  With `web.output: "single"` in app.json, Expo builds the exported index.html
+  from this file (public/index.html) and appends the bundle <script> itself.
+  Note it does NOT use an Expo Router `+html.tsx` -- that only applies to the
+  static/server output modes, so metadata and global CSS have to live here.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+
+    <title>CuraLink Plus — Partner portal</title>
+    <meta
+      name="description"
+      content="CuraLink Plus is the partner portal for nurses, doctors, veterinarians, pharmacies and ambulance operators. Manage jobs, schedules, teams and earnings."
+    />
+
+    <meta property="og:title" content="CuraLink Plus — Partner portal" />
+    <meta
+      property="og:description"
+      content="Manage jobs, schedules, teams and earnings on the CuraLink partner network."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://curalinkplus.co.in/app" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Partners work a whole shift in here -- installing it standalone drops
+         the browser chrome and matches the native app. -->
+    <link rel="manifest" href="/app/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CuraLink Plus" />
+    <link rel="apple-touch-icon" href="/app/icon-192.png" />
+    <meta name="theme-color" content="#0f7a5e" />
+
+    <!-- Staff tool, not a marketing surface. -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <style id="expo-reset">
+      /* react-native-web's recommended reset: full-height document, and body
+         scrolling disabled so the app's own <ScrollView>s own scrolling the
+         way they do on native. */
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        overflow: hidden;
+        margin: 0;
+        background-color: #f7f8fa;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overscroll-behavior-y: none;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+        background-color: #f7f8fa;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+          env(safe-area-inset-left);
+        box-sizing: border-box;
+      }
+
+      /* See the consumer app's shell for the rationale. Plus gets a wider
+         frame: partners live in the dispatch/queue/analytics screens, and those
+         are the ones most starved for horizontal room. */
+      @media (min-width: 768px) {
+        body {
+          background-color: #0a1628;
+          background-image: radial-gradient(
+            ellipse at 50% 0%,
+            rgba(15, 122, 94, 0.22) 0%,
+            rgba(10, 22, 40, 0) 60%
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #root {
+          width: 520px;
+          max-width: 100%;
+          height: min(940px, 100vh);
+          flex: none;
+          border-radius: 28px;
+          overflow: hidden;
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+          padding: 0;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body,
+        #root {
+          background-color: #0a1628;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      CuraLink Plus needs JavaScript to run. Please enable it, or visit
+      <a href="/">curalinkplus.co.in</a> to learn about the partner network.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

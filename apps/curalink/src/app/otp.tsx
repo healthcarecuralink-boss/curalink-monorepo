@@ -1,22 +1,26 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Phone } from "lucide-react-native";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { ArrowLeft, Mail, Phone } from "lucide-react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CONSENT_VERSION,
+  fetchAddresses,
   fetchFamilyMembers,
   getErrorMessage,
   recordConsent,
   redeemReferralCode,
+  resendEmailOtp,
+  resendPhoneOtp,
   signInWithPhonePassword,
   supabase,
-  verifyMsg91AccessToken,
+  useSessionStore,
+  verifyEmailOtp,
+  verifyPhoneOtp,
   toE164IndianPhone,
 } from "@curalink/api-client";
 import { Button, curalinkFonts, useTheme } from "@curalink/ui";
-import { retryMsg91Otp, verifyMsg91Otp } from "../utils/msg91Widget";
 
-const CODE_LENGTH = 4;
+const CODE_LENGTH = 6;
 const RESEND_SECONDS = 30;
 
 export default function OtpScreen() {
@@ -30,6 +34,19 @@ export default function OtpScreen() {
       paddingHorizontal: 24,
       paddingTop: 100,
       alignItems: "center",
+    },
+    backButton: {
+      position: "absolute",
+      top: 56,
+      left: 24,
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
     },
     iconChip: {
       width: 60,
@@ -54,6 +71,10 @@ export default function OtpScreen() {
     subtitleAccent: {
       fontWeight: "700",
       color: colors.ink,
+    },
+    changeLink: {
+      fontWeight: "700",
+      color: colors.primary,
     },
     boxRow: {
       flexDirection: "row",
@@ -101,13 +122,16 @@ export default function OtpScreen() {
         }),
       [colors],
     );
-  const { phone, name, referralCode, consent, reqId } = useLocalSearchParams<{
-    phone: string;
+  const { phone, email, channel, name, referralCode, consent } = useLocalSearchParams<{
+    phone?: string;
+    email?: string;
+    // "email" = interim Supabase email OTP; anything else = phone (WhatsApp) OTP.
+    channel?: string;
     name?: string;
     referralCode?: string;
     consent?: string;
-    reqId: string;
   }>();
+  const isEmail = channel === "email";
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,14 +148,23 @@ export default function OtpScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const accessToken = await verifyMsg91Otp(reqId, fullCode);
-      const { password } = await verifyMsg91AccessToken(phone, accessToken);
-      await signInWithPhonePassword(phone, password);
+      if (isEmail) {
+        // verifyOtp establishes the session itself -- no password bridge.
+        await verifyEmailOtp(email ?? "", fullCode);
+      } else {
+        const { password } = await verifyPhoneOtp(phone ?? "", fullCode);
+        await signInWithPhonePassword(phone ?? "", password);
+      }
 
       const { data: sessionData } = await supabase.auth.getSession();
       const userId = sessionData.session?.user.id;
       if (userId && name) {
         await supabase.from("profiles").update({ full_name: name }).eq("id", userId);
+        // The SIGNED_IN event from verifyEmailOtp/signInWithPhonePassword already
+        // triggered a profile fetch (see sessionStore's onAuthStateChange listener),
+        // which can race this update and cache the trigger's placeholder name.
+        // Refresh once more now that the real name is written.
+        await useSessionStore.getState().refreshProfile();
       }
       if (userId && consent) {
         await recordConsent(userId, CONSENT_VERSION);
@@ -146,8 +179,16 @@ export default function OtpScreen() {
       }
 
       if (userId) {
-        const familyMembers = await fetchFamilyMembers(userId);
-        router.replace(familyMembers.length > 0 ? "/(tabs)/home" : "/care-setup");
+        const addresses = await fetchAddresses(userId);
+        if (addresses.length === 0) {
+          // First-time signup: ask for a tentative area before the rest of
+          // onboarding -- location-setup.tsx handles the care-setup/home
+          // routing itself once it's done (or skipped).
+          router.replace("/location-setup");
+        } else {
+          const familyMembers = await fetchFamilyMembers(userId);
+          router.replace(familyMembers.length > 0 ? "/(tabs)/home" : "/care-setup");
+        }
       } else {
         router.replace("/(tabs)/home");
       }
@@ -162,7 +203,11 @@ export default function OtpScreen() {
   async function handleResend() {
     setError(null);
     try {
-      await retryMsg91Otp(reqId);
+      if (isEmail) {
+        await resendEmailOtp(email ?? "", name);
+      } else {
+        await resendPhoneOtp(phone ?? "");
+      }
       setSecondsLeft(RESEND_SECONDS);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -179,12 +224,31 @@ export default function OtpScreen() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={styles.backButton}
+        hitSlop={8}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={18} color={colors.ink} strokeWidth={2} />
+      </Pressable>
+
       <View style={styles.iconChip}>
-        <Phone size={26} color={colors.navy} strokeWidth={1.8} />
+        {isEmail ? (
+          <Mail size={26} color={colors.navy} strokeWidth={1.8} />
+        ) : (
+          <Phone size={26} color={colors.navy} strokeWidth={1.8} />
+        )}
       </View>
-      <Text style={styles.title}>Verify your number</Text>
+      <Text style={styles.title}>{isEmail ? "Verify your email" : "Verify your number"}</Text>
       <Text style={styles.subtitle}>
-        We sent a {CODE_LENGTH}-digit code to <Text style={styles.subtitleAccent}>{toE164IndianPhone(phone ?? "")}</Text>
+        We sent a {CODE_LENGTH}-digit code to{" "}
+        <Text style={styles.subtitleAccent}>{isEmail ? email : toE164IndianPhone(phone ?? "")}</Text>
+        {"  "}
+        <Text style={styles.changeLink} onPress={() => router.back()}>
+          Change
+        </Text>
       </Text>
 
       <View style={styles.boxRow} onTouchEnd={() => inputRef.current?.focus()}>

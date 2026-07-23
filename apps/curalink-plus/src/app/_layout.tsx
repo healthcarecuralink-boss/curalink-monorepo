@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { router, Stack } from "expo-router";
+import * as Linking from "expo-linking";
 import { wrapRootLayout } from "../utils/sentry";
 import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { initSessionListener, useSessionStore } from "@curalink/api-client";
+import { createSessionFromUrl, getErrorMessage, initSessionListener, useSessionStore } from "@curalink/api-client";
 import {
   useFonts,
   PlusJakartaSans_700Bold,
@@ -50,6 +51,21 @@ function RootLayout() {
       router.replace("/login");
     }
   }, [session, isLoading]);
+
+  // Google sign-in redirect handling, root-level and independent of any
+  // screen's own mount timing -- see createSessionFromUrl's comment (and
+  // curalink app's _layout.tsx, which this mirrors) for why. Covers both a
+  // cold start (app wasn't running when the redirect arrived) and a warm one.
+  useEffect(() => {
+    function handleUrl(url: string) {
+      void createSessionFromUrl(url).catch((err) => useSessionStore.getState().setAuthError(getErrorMessage(err)));
+    }
+    void Linking.getInitialURL().then((url) => {
+      if (url) handleUrl(url);
+    });
+    const subscription = Linking.addEventListener("url", ({ url }) => handleUrl(url));
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     if (session?.user.id) {

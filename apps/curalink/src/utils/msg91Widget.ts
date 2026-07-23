@@ -1,60 +1,31 @@
-import { OTPWidget } from "@msg91comm/sendotp-react-native";
-import { toMsg91Identifier } from "@curalink/api-client";
+// ⚠️ DEPRECATED / DISABLED -- MSG91 OTP has been retired.
+//
+// Phone login now goes through WhatsApp (Meta Cloud API), fully server-side:
+//   - send:   sendPhoneOtp / resendPhoneOtp  (@curalink/api-client)
+//   - verify: verifyPhoneOtp                 (@curalink/api-client)
+//   - backend: supabase/functions/send-whatsapp-otp + verify-whatsapp-otp
+//
+// This file is intentionally kept (not deleted) as a nerfed stub so history and
+// any stray import resolve, but every export throws -- nothing here should run
+// anymore. Delete once you're confident no build references it.
+//
+// Original implementation: see git history for the MSG91 OTP Widget wrapper
+// (@msg91comm/sendotp-react-native).
 
-const WIDGET_ID = process.env.EXPO_PUBLIC_MSG91_WIDGET_ID ?? "";
-const TOKEN_AUTH = process.env.EXPO_PUBLIC_MSG91_WIDGET_AUTH_TOKEN ?? "";
+const DEPRECATED = "MSG91 OTP is disabled. Use the WhatsApp OTP flow (sendPhoneOtp / verifyPhoneOtp in @curalink/api-client).";
 
-const isMockMode = !WIDGET_ID || !TOKEN_AUTH;
-
-let initialized = false;
-
-// Widget ID / auth token are meant to be client-embedded (MSG91's own web
-// widget ships them inline in a <script> tag) -- unlike MSG91_AUTH_KEY, which
-// must stay server-only. Safe to call repeatedly; only initializes once.
 export function ensureMsg91WidgetInitialized(): void {
-  if (initialized || isMockMode) return;
-  OTPWidget.initializeWidget(WIDGET_ID, TOKEN_AUTH);
-  initialized = true;
+  throw new Error(DEPRECATED);
 }
 
-interface Msg91Response {
-  type?: string;
-  message?: string;
+export function sendMsg91Otp(_phone: string): Promise<string> {
+  throw new Error(DEPRECATED);
 }
 
-// Returns the reqId needed for verifyMsg91Otp/retryMsg91Otp.
-export async function sendMsg91Otp(phone: string): Promise<string> {
-  if (isMockMode) {
-    console.warn("MSG91 credentials missing. Running OTP flow in local mock mode.");
-    return "bypass-req-id";
-  }
-  ensureMsg91WidgetInitialized();
-  const response = (await OTPWidget.sendOTP({ identifier: toMsg91Identifier(phone) })) as Msg91Response;
-  if (response?.type !== "success" || !response.message) {
-    throw new Error(response?.message ?? "Couldn't send the verification code. Try again.");
-  }
-  return response.message;
+export function retryMsg91Otp(_reqId: string): Promise<void> {
+  throw new Error(DEPRECATED);
 }
 
-export async function retryMsg91Otp(reqId: string): Promise<void> {
-  if (isMockMode) return;
-  ensureMsg91WidgetInitialized();
-  const response = (await OTPWidget.retryOTP({ reqId, retryChannel: 11 })) as Msg91Response;
-  if (response?.type !== "success") {
-    throw new Error(response?.message ?? "Couldn't resend the code. Try again.");
-  }
-}
-
-// Returns the access-token that must be re-verified server-side (see
-// verifyMsg91AccessToken in @curalink/api-client) before it's trusted.
-export async function verifyMsg91Otp(reqId: string, otp: string): Promise<string> {
-  if (isMockMode) {
-    return "dummy-access-token";
-  }
-  ensureMsg91WidgetInitialized();
-  const response = (await OTPWidget.verifyOTP({ reqId, otp })) as Msg91Response;
-  if (response?.type !== "success" || !response.message) {
-    throw new Error(response?.message ?? "Incorrect code. Try again.");
-  }
-  return response.message;
+export function verifyMsg91Otp(_reqId: string, _otp: string): Promise<string> {
+  throw new Error(DEPRECATED);
 }

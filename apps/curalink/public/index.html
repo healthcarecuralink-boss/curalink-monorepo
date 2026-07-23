@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!--
+  Web shell for the CuraLink app at curalink.co.in/app.
+
+  With `web.output: "single"` in app.json, Expo builds the exported index.html
+  from this file (public/index.html) and appends the bundle <script> itself.
+  Note it does NOT use an Expo Router `+html.tsx` -- that only applies to the
+  static/server output modes, so metadata and global CSS have to live here.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover + the safe-area padding below keep the layout clear
+         of the notch and home indicator once installed on iOS. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+
+    <title>CuraLink — Book care for your family, right at home</title>
+    <meta
+      name="description"
+      content="CuraLink brings nurses, doctors, physiotherapists, lab tests and ambulances to your door. Book trusted home healthcare across India in minutes."
+    />
+
+    <meta property="og:title" content="CuraLink — Home healthcare, on demand" />
+    <meta
+      property="og:description"
+      content="Book nurses, doctors, lab tests and ambulances to your door. Trusted home healthcare across India."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://curalink.co.in/app" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Installable-PWA bits, so "Add to Home Screen" gives the same
+         standalone, chrome-less feel as the native app. -->
+    <link rel="manifest" href="/app/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="CuraLink" />
+    <link rel="apple-touch-icon" href="/app/icon-192.png" />
+    <meta name="theme-color" content="#00C27C" />
+
+    <!-- Login-gated and client-rendered; the marketing site at / is what
+         should rank. -->
+    <meta name="robots" content="noindex, nofollow" />
+
+    <style id="expo-reset">
+      /* react-native-web's recommended reset: full-height document, and body
+         scrolling disabled so the app's own <ScrollView>s own scrolling the
+         way they do on native. */
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        overflow: hidden;
+        margin: 0;
+        background-color: #fafaf8;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overscroll-behavior-y: none;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+        background-color: #fafaf8;
+        /* Respect the notch / home indicator when installed to the home screen. */
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+          env(safe-area-inset-left);
+        box-sizing: border-box;
+      }
+
+      /* The app is a phone-width design. Left alone, react-native-web stretches
+         it edge-to-edge and a desktop window shows one narrow column of content
+         floating in dead space. Above this breakpoint we instead frame it as a
+         centred, device-sized surface on a branded backdrop, which reads as
+         deliberate. Actual phones stay untouched. */
+      @media (min-width: 768px) {
+        body {
+          background-color: #0b1d2e;
+          background-image: radial-gradient(
+            ellipse at 50% 0%,
+            rgba(0, 194, 124, 0.18) 0%,
+            rgba(11, 29, 46, 0) 60%
+          );
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #root {
+          width: 460px;
+          max-width: 100%;
+          height: min(940px, 100vh);
+          flex: none;
+          border-radius: 28px;
+          overflow: hidden;
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+          padding: 0;
+        }
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body,
+        #root {
+          background-color: #0b1d2e;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>
+      CuraLink needs JavaScript to run. Please enable it, or visit
+      <a href="/">curalink.co.in</a> to learn more and request early access.
+    </noscript>
+    <div id="root"></div>
+  </body>
+</html>

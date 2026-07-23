@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ShieldCheck } from "lucide-react-native";
-import { StyleSheet, Text, View } from "react-native";
+import { ArrowLeft, ShieldCheck } from "lucide-react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { updateProfessionalCredentials, useSessionStore, type ProfessionalRole } from "@curalink/api-client";
 import { Button, Card, TextField, curalinkPlusFonts, useTheme } from "@curalink/ui";
 
@@ -11,7 +11,18 @@ export default function BankDetailsScreen() {
   const styles = useMemo(
       () =>
         StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, paddingTop: 90 },
+    container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, paddingTop: 64 },
+    backButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 20,
+    },
     title: { fontFamily: curalinkPlusFonts.heading, fontSize: 24, color: colors.ink },
     subtitle: { fontSize: 13.5, color: colors.muted, marginTop: 4 },
     form: { marginTop: 24, gap: 16 },
@@ -51,6 +62,15 @@ export default function BankDetailsScreen() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={styles.backButton}
+        hitSlop={8}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={18} color={colors.ink} strokeWidth={2} />
+      </Pressable>
       <Text style={styles.title}>Payout details</Text>
       <Text style={styles.subtitle}>Where should we send your earnings?</Text>
 

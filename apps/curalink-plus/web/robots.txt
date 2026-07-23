@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Partner portal -- login-gated and client-rendered, nothing to index.
+Disallow: /app
+
+Sitemap: https://curalinkplus.co.in/sitemap.xml

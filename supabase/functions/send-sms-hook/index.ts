@@ -1,3 +1,7 @@
+// ⚠️ DEPRECATED / DISABLED -- MSG91 is retired. Login now uses WhatsApp OTP
+// (server-side: send-whatsapp-otp + verify-whatsapp-otp). The send_sms hook is
+// disabled in config.toml, so this function no longer runs. Kept for reference.
+//
 // Supabase Auth "Send SMS" hook.
 //
 // Supabase Auth still owns OTP generation and verification (via

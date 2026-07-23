@@ -24,6 +24,14 @@ interface SessionState {
   // so whichever screen is on screen when it happens can display it.
   authError: string | null;
   setAuthError: (message: string | null) => void;
+  // CuraLink Plus only: which role an applicant picked on /signup before
+  // tapping "Continue with Google". Unlike the phone/email OTP path, Google's
+  // redirect can't carry a `role` route param through the browser round-trip
+  // (see auth-callback.tsx), so login.tsx stashes it here right before
+  // kicking off signInWithGoogle, and auth-callback.tsx reads + clears it
+  // once the session lands.
+  pendingApplyRole: ProfessionalRole | null;
+  setPendingApplyRole: (role: ProfessionalRole | null) => void;
   setActiveRole: (role: ProfessionalRole) => void;
   refreshProfile: () => Promise<void>;
 }
@@ -34,8 +42,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   activeRole: null,
   isLoading: true,
   authError: null,
+  pendingApplyRole: null,
 
   setAuthError: (message) => set({ authError: message }),
+  setPendingApplyRole: (role) => set({ pendingApplyRole: role }),
 
   setActiveRole: (role) => {
     set({ activeRole: role });

@@ -26,6 +26,11 @@
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true,
+      "baseUrl": "/app"
+    },
     "plugins": [
       "expo-router",
       [
@@ -36,11 +41,9 @@
           "imageWidth": 76
         }
       ],
-      "@sentry/react-native"
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    }
+      "@sentry/react-native",
+      "expo-font",
+      "expo-status-bar"
+    ]
   }
 }

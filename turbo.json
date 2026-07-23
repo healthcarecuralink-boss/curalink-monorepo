@@ -10,6 +10,11 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".expo/**"]
     },
+    "build:web": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "env": ["EXPO_PUBLIC_*", "SENTRY_*"]
+    },
     "lint": {
       "dependsOn": ["^build"]
     },

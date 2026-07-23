@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Check } from "lucide-react-native";
+import { ArrowLeft, Check } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { updateProfessionalCredentials, useSessionStore, type ProfessionalRole } from "@curalink/api-client";
 import { Button, TextField, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
@@ -30,6 +30,17 @@ export default function ProfessionalDetailsStep1() {
       () =>
         StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 24, paddingTop: 70 },
+    backButton: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+    },
     progressTrack: { height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: "hidden" },
     progressFill: { height: "100%", borderRadius: 2 },
     step: { fontSize: 11, fontWeight: "700", color: colors.muted, marginTop: 8 },
@@ -87,6 +98,15 @@ export default function ProfessionalDetailsStep1() {
 
   return (
     <View style={styles.container}>
+      <Pressable
+        style={styles.backButton}
+        hitSlop={8}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel="Go back"
+      >
+        <ArrowLeft size={18} color={colors.ink} strokeWidth={2} />
+      </Pressable>
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: "50%", backgroundColor: accent }]} />
       </View>

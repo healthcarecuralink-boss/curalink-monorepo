@@ -30,12 +30,23 @@ From the repo root:
 pnpm install
 ```
 
-### 2. Get Supabase credentials
+### 2. Get Supabase + MSG91 credentials
 Ask whoever owns the Supabase project for (or find in **supabase.com → your project → Project
 Settings → API**):
 - **Project URL** — looks like `https://xxxxx.supabase.co` (use the base URL, not the
   `/rest/v1/...` path)
 - **anon / public key** — long string starting with `eyJ...`
+
+Ask whoever owns the MSG91 account for (or find in **msg91.com → OTP → Widgets**):
+- **Widget ID**
+- **Token Auth**
+
+⚠️ Without these two, phone login silently no-ops in dev (mock mode, console-warns only — see
+`utils/msg91Widget.ts`) and **throws loudly in any non-dev build** rather than pretending to send
+an OTP. If OTP delivery ever appears to silently fail, check these are actually set for the build
+in question — they don't come from `.env.local` below, and there is currently no `eas.json` /
+EAS secret wiring them into non-local builds, so a fresh EAS/CI build needs them added explicitly
+as build-time env vars.
 
 ### 3. Create the env file(s)
 Each app reads its own `.env.local` (this filename is git-ignored on purpose — never commit
@@ -45,12 +56,16 @@ real credentials):
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+EXPO_PUBLIC_MSG91_WIDGET_ID=...
+EXPO_PUBLIC_MSG91_WIDGET_AUTH_TOKEN=...
 ```
 
-`apps/curalink-plus/.env.local` — same two values (same backend, same keys):
+`apps/curalink-plus/.env.local` — same values (same backend, same keys):
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+EXPO_PUBLIC_MSG91_WIDGET_ID=...
+EXPO_PUBLIC_MSG91_WIDGET_AUTH_TOKEN=...
 ```
 
 ### 4. Point your shell at the Android SDK

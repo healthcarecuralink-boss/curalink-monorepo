@@ -64,9 +64,20 @@ function jsonResponse(body: unknown, status: number) {
   });
 }
 
+// ⚠️ DEPRECATED / DISABLED -- MSG91 OTP has been retired in favor of WhatsApp
+// (Meta Cloud API). Login now uses supabase/functions/send-whatsapp-otp +
+// verify-whatsapp-otp. This function is kept (not deleted) but hard-disabled:
+// it returns 410 Gone so any stale client can't quietly mint a session through
+// the old path. The original implementation remains below as dead code for
+// reference -- delete once nothing references it.
 Deno.serve(withSentry(async (req) => {
   const preflight = handleCorsPreflight(req);
   if (preflight) return preflight;
+
+  return jsonResponse(
+    { error: "verify-msg91-otp is disabled. This deployment uses WhatsApp OTP (verify-whatsapp-otp)." },
+    410,
+  );
 
   let payload: VerifyRequestBody;
   try {

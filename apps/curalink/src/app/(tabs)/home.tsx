@@ -16,6 +16,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { fetchActiveBooking, fetchBookAgain, fetchServices, useSessionStore } from "@curalink/api-client";
 import { Card, ErrorState, Skeleton, curalinkCategoryAccents, curalinkFonts, useTheme } from "@curalink/ui";
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Welcome back";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 21) return "Good evening";
+  return "Welcome back";
+}
 
 export default function HomeScreen() {
   const { colors, type } = useTheme();
@@ -446,7 +454,7 @@ export default function HomeScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={styles.greeting}>Good morning, {firstName}</Text>
+          <Text style={styles.greeting}>{getGreeting()}, {firstName}</Text>
           <Pressable style={styles.locationRow}>
             <MapPin size={13} color={colors.primary} strokeWidth={2} />
             <Text style={styles.locationText}>Jubilee Hills, Hyderabad</Text>

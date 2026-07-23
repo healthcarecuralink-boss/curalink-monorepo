@@ -1,0 +1,17 @@
+# Netlify routing for curalink.co.in
+#
+# The marketing site is a real static file at /, so it needs no rule. The Expo
+# app is a single-page bundle mounted at /app: every route below it (/app/auth,
+# /app/bookings/123, ...) exists only in the client router, so the server has to
+# hand back the same shell with a 200 rather than a 404 or a redirect -- a 301
+# here would rewrite the URL and lose the deep link.
+
+# Bare /app, no trailing slash.
+/app              /app/index.html   200
+
+# Everything under /app. Netlify matches real files first, so the JS bundle,
+# manifest and icons are still served normally; only unmatched paths fall
+# through to the shell.
+/app/*            /app/index.html   200
+
+# Apex/www is handled by Netlify's domain settings, not here.

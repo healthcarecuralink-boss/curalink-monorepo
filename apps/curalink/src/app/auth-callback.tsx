@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import {
   CONSENT_VERSION,
+  fetchAddresses,
   fetchFamilyMembers,
   getErrorMessage,
   hasRecordedConsent,
@@ -42,6 +43,11 @@ export default function AuthCallbackScreen() {
         const { data: profile } = await supabase.from("profiles").select("phone").eq("id", userId).maybeSingle();
         if (!profile?.phone) {
           router.replace("/add-phone");
+          return;
+        }
+        const addresses = await fetchAddresses(userId);
+        if (addresses.length === 0) {
+          router.replace("/location-setup");
           return;
         }
         const familyMembers = await fetchFamilyMembers(userId);

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { router } from "expo-router";
 import { Phone } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { fetchFamilyMembers, getErrorMessage, updatePhoneNumber, useSessionStore } from "@curalink/api-client";
+import { fetchAddresses, fetchFamilyMembers, getErrorMessage, updatePhoneNumber, useSessionStore } from "@curalink/api-client";
 import { Button, TextField, curalinkFonts, useTheme } from "@curalink/ui";
 
 // Shown once, right after a Google sign-in, if the profile has no phone on
@@ -70,6 +70,11 @@ export default function AddPhoneScreen() {
   const [error, setError] = useState<string | null>(null);
 
   async function proceed(userId: string) {
+    const addresses = await fetchAddresses(userId);
+    if (addresses.length === 0) {
+      router.replace("/location-setup");
+      return;
+    }
     const familyMembers = await fetchFamilyMembers(userId);
     router.replace(familyMembers.length > 0 ? "/(tabs)/home" : "/care-setup");
   }

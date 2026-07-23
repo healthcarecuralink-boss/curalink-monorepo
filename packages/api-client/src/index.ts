@@ -2,6 +2,12 @@ export const apiClientPackageName = "@curalink/api-client";
 
 export { supabase } from "./supabaseClient";
 export {
+  sendPhoneOtp,
+  resendPhoneOtp,
+  verifyPhoneOtp,
+  sendEmailOtp,
+  resendEmailOtp,
+  verifyEmailOtp,
   verifyMsg91AccessToken,
   signInWithPhonePassword,
   signInWithGoogle,

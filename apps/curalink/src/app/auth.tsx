@@ -2,15 +2,19 @@ import { useState, useMemo } from "react";
 import { router } from "expo-router";
 import { Check, HeartPulse } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { getErrorMessage, signInWithGoogle, useSessionStore } from "@curalink/api-client";
+import { getErrorMessage, sendEmailOtp, sendPhoneOtp, signInWithGoogle, useSessionStore } from "@curalink/api-client";
 import { Button, TextField, curalinkFonts, useTheme } from "@curalink/ui";
-import { sendMsg91Otp } from "../utils/msg91Widget";
+
+// Phone (WhatsApp) OTP is temporarily hidden while Meta Business Verification is
+// pending -- email OTP is the interim login. Flip to true once WhatsApp is live
+// (verification approved + edge functions deployed + template secret set).
+const PHONE_OTP_ENABLED = false;
 
 // Single entry point (replaces the old welcome -> login -> signup split):
 // one phone number can only ever be one account, so there's nothing to
 // disambiguate up front -- Google is one tap, and the phone path below
 // works the same whether the number is new or returning (the backend
-// decides that, see verify-msg91-otp).
+// decides that, see verify-whatsapp-otp).
 export default function AuthScreen() {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -115,10 +119,12 @@ export default function AuthScreen() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [consentGiven, setConsentGiven] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [isPhoneSubmitting, setIsPhoneSubmitting] = useState(false);
+  const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleGoogle() {
@@ -150,19 +156,22 @@ export default function AuthScreen() {
       setError("Please accept the Terms of Service and Privacy Policy to continue.");
       return;
     }
+    if (!name.trim()) {
+      setError("Enter your full name.");
+      return;
+    }
     if (!phone.trim()) {
       setError("Enter your mobile number.");
       return;
     }
     setIsPhoneSubmitting(true);
     try {
-      const reqId = await sendMsg91Otp(phone);
+      await sendPhoneOtp(phone);
       router.push({
         pathname: "/otp",
         params: {
           phone,
-          reqId,
-          name: name.trim() || undefined,
+          name: name.trim(),
           referralCode: referralCode.trim() || undefined,
           consent: "1",
         },
@@ -171,6 +180,42 @@ export default function AuthScreen() {
       setError(getErrorMessage(err));
     } finally {
       setIsPhoneSubmitting(false);
+    }
+  }
+
+  // Interim email OTP -- works today while WhatsApp phone OTP waits on Meta
+  // Business Verification. Same downstream flow; the code just arrives by email.
+  async function handleEmailContinue() {
+    setError(null);
+    if (!consentGiven) {
+      setError("Please accept the Terms of Service and Privacy Policy to continue.");
+      return;
+    }
+    if (!name.trim()) {
+      setError("Enter your full name.");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    setIsEmailSubmitting(true);
+    try {
+      await sendEmailOtp(email, name);
+      router.push({
+        pathname: "/otp",
+        params: {
+          email: email.trim(),
+          channel: "email",
+          name: name.trim(),
+          referralCode: referralCode.trim() || undefined,
+          consent: "1",
+        },
+      });
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsEmailSubmitting(false);
     }
   }
 
@@ -197,20 +242,22 @@ export default function AuthScreen() {
 
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>or continue with phone</Text>
+        <Text style={styles.dividerText}>{PHONE_OTP_ENABLED ? "or continue with phone" : "or continue with email"}</Text>
         <View style={styles.dividerLine} />
       </View>
 
       <View style={styles.form}>
-        <TextField label="Full name (optional)" placeholder="Priya Nair" value={name} onChangeText={setName} />
-        <TextField
-          label="Mobile number"
-          placeholder="98480 12345"
-          phonePrefix="+91"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-        />
+        <TextField label="Full name" placeholder="Priya Nair" value={name} onChangeText={setName} />
+        {PHONE_OTP_ENABLED ? (
+          <TextField
+            label="Mobile number"
+            placeholder="98480 12345"
+            phonePrefix="+91"
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+          />
+        ) : null}
         <TextField
           label="Referral code (optional)"
           placeholder="e.g. AB12CD"
@@ -241,10 +288,33 @@ export default function AuthScreen() {
           </Text>
         </Pressable>
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {PHONE_OTP_ENABLED ? (
+          <>
+            <Button
+              label={isPhoneSubmitting ? "Sending..." : "Send OTP"}
+              disabled={isPhoneSubmitting}
+              onPress={() => void handlePhoneContinue()}
+            />
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or get the code by email</Text>
+              <View style={styles.dividerLine} />
+            </View>
+          </>
+        ) : null}
+        <TextField
+          label="Email"
+          placeholder="you@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+        />
         <Button
-          label={isPhoneSubmitting ? "Sending..." : "Send OTP"}
-          disabled={isPhoneSubmitting}
-          onPress={() => void handlePhoneContinue()}
+          label={isEmailSubmitting ? "Sending..." : "Email me a code"}
+          variant="secondary"
+          disabled={isEmailSubmitting}
+          onPress={() => void handleEmailContinue()}
         />
       </View>
     </View>

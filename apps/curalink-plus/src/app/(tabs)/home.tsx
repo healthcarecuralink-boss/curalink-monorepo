@@ -22,6 +22,15 @@ const roleLabels: Record<ProfessionalRole, string> = {
 
 const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 5) return "Welcome back";
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  if (hour < 21) return "Good evening";
+  return "Welcome back";
+}
+
 export default function HomeScreen() {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -84,7 +93,7 @@ export default function HomeScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good morning, {firstName}</Text>
+          <Text style={styles.greeting}>{getGreeting()}, {firstName}</Text>
           <Text style={styles.date}>{today}</Text>
         </View>
         <View style={styles.headerButtons}>

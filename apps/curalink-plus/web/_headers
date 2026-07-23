@@ -1,0 +1,25 @@
+# Netlify response headers for curalinkplus.co.in
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # The app asks for location to find nearby providers; nothing here needs a
+  # camera or mic, so deny them outright rather than leaving them available.
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=()
+
+# Expo fingerprints every bundle and asset filename with a content hash, so a
+# changed file is always a new URL -- these can be cached permanently.
+/app/_expo/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The shell points at those hashed filenames, so it must never be cached or a
+# returning visitor keeps booting the previous deploy's bundle.
+/app/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/app/manifest.json
+  Cache-Control: public, max-age=3600
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

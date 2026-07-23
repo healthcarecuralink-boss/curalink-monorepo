@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# The app shell renders client-side and every route behind it needs a login,
+# so there is nothing for a crawler to index -- the marketing site at / is
+# what should rank.
+Disallow: /app
+
+Sitemap: https://curalink.co.in/sitemap.xml

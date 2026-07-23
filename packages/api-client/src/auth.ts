@@ -24,50 +24,103 @@ export function toWhatsAppLink(phone: string, message?: string): string {
   return `https://wa.me/${digits}${query}`;
 }
 
-// Phone auth now goes through the MSG91 OTP Widget client-side (see each
-// app's utils/msg91Widget.ts) instead of supabase.auth.signInWithOtp --
-// Supabase can only verify OTPs it generated itself, so once the widget
-// independently verifies the phone, this exchanges that proof for a real
-// session rather than trying to feed it into verifyOtp. The verify-msg91-otp
-// Edge Function re-checks the widget's access-token server-side against
-// MSG91 (never trust client-reported "verified" alone), then sets a fresh
-// one-time password on the Supabase user -- signInWithPhonePassword
-// immediately below spends it for a real, fully-native session.
-export async function verifyMsg91AccessToken(phone: string, accessToken: string): Promise<{ password: string }> {
-  const localDevPassword = "CuraLinkLocalDevPassword123!";
-  
-  if (accessToken === "dummy-access-token") {
-    console.warn("Bypassing MSG91 verification for local development.");
-    
-    // Check if user already exists
-    const storedPhone = toE164IndianPhone(phone).replace("+", "");
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("phone", storedPhone)
-      .maybeSingle();
+// Phone auth now goes through WhatsApp (Meta Cloud API), server-side: the
+// backend generates the OTP, delivers it over WhatsApp, and verifies it. See
+// supabase/functions/send-whatsapp-otp + verify-whatsapp-otp. The three
+// functions below are the client's whole surface for it.
+//
+// Unlike the old MSG91 widget, nothing OTP-related runs on the client anymore
+// (no widget SDK, no client-embedded credentials, no reqId to thread through
+// the navigation) -- the phone number is the only key, and the edge functions
+// own generation, delivery, throttling, and verification.
 
-    if (!existingProfile) {
-      // New signup: create the user with the static local password
-      console.warn("Creating new local dev user...");
-      const { error: signUpError } = await supabase.auth.signUp({
-        phone: toE164IndianPhone(phone),
-        password: localDevPassword,
-      });
-      if (signUpError && !signUpError.message.includes("already registered")) {
-        throw signUpError;
-      }
+// Requests a fresh OTP be sent to `phone` over WhatsApp. In dev/mock mode the
+// edge function logs the code to its console instead of sending a message.
+export async function sendPhoneOtp(phone: string): Promise<void> {
+  const { error } = await supabase.functions.invoke("send-whatsapp-otp", {
+    body: { phone: toE164IndianPhone(phone) },
+  });
+  if (error) throw await toInvokeError(error, "Couldn't send the verification code. Try again.");
+}
+
+// Resend is just another send -- the backend's resend cooldown + send cap
+// (see send-whatsapp-otp) govern how often this is allowed.
+export async function resendPhoneOtp(phone: string): Promise<void> {
+  return sendPhoneOtp(phone);
+}
+
+// Verifies the code and, on success, returns the one-time password to spend on
+// signInWithPhonePassword below (same session-bridge pattern as before).
+export async function verifyPhoneOtp(phone: string, otp: string): Promise<{ password: string }> {
+  const { data, error } = await supabase.functions.invoke<{ password: string }>("verify-whatsapp-otp", {
+    body: { phone: toE164IndianPhone(phone), otp },
+  });
+  if (error) throw await toInvokeError(error, "Incorrect code. Try again.");
+  if (!data?.password) throw new Error("verify-whatsapp-otp returned no data");
+  return data;
+}
+
+// supabase.functions.invoke wraps non-2xx responses in a FunctionsHttpError
+// whose useful message is in the JSON body, not error.message ("Edge Function
+// returned a non-2xx status code"). Pull the server's own message out so the
+// UI shows "Incorrect code" / "Please wait 30s" instead of that generic text.
+async function toInvokeError(error: unknown, fallback: string): Promise<Error> {
+  const context = (error as { context?: Response })?.context;
+  if (context && typeof context.json === "function") {
+    try {
+      const body = await context.json();
+      if (body?.error) return new Error(body.error);
+    } catch {
+      // body wasn't JSON -- fall through to the fallback.
     }
-    
-    return { password: localDevPassword };
   }
+  if (error instanceof Error && error.message) return new Error(error.message);
+  return new Error(fallback);
+}
 
-  const { data, error } = await supabase.functions.invoke<{ password: string }>("verify-msg91-otp", {
-    body: { phone: toE164IndianPhone(phone), accessToken },
+// --- Interim email OTP -------------------------------------------------------
+// A stopgap login while WhatsApp OTP waits on Meta Business Verification (the
+// authentication-template gate). Unlike phone, Supabase does email OTP natively
+// end-to-end -- it generates the code, emails it, and verifyOtp establishes the
+// session directly (no password-bridge / edge function needed). Needs zero Meta
+// setup, so it works today.
+//
+// Dashboard prerequisite: the "Magic Link" email template must send the numeric
+// code, i.e. include `{{ .Token }}` (Supabase Auth -> Email Templates), or users
+// get a magic link instead of the 6-digit code these screens expect.
+
+export async function sendEmailOtp(email: string, name?: string): Promise<void> {
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    // Returning and new users both land here -- the number/email is the account,
+    // same single-entry-point philosophy as the phone flow.
+    // `data.full_name` seeds raw_user_meta_data so the handle_new_user() trigger
+    // (see supabase/migrations) writes the real name on first insert instead of
+    // its "New user" fallback -- otherwise the profiles row briefly (and for
+    // returning-session caches, indefinitely) shows that placeholder.
+    options: { shouldCreateUser: true, data: name?.trim() ? { full_name: name.trim() } : undefined },
   });
   if (error) throw error;
-  if (!data) throw new Error("verify-msg91-otp returned no data");
-  return data;
+}
+
+export async function resendEmailOtp(email: string, name?: string): Promise<void> {
+  return sendEmailOtp(email, name);
+}
+
+// Unlike verifyPhoneOtp, this doesn't return a password -- verifyOtp itself sets
+// the Supabase session, so callers skip signInWithPhonePassword and go straight
+// to the post-login profile/consent/routing steps.
+export async function verifyEmailOtp(email: string, token: string): Promise<void> {
+  const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token, type: "email" });
+  if (error) throw error;
+}
+
+// @deprecated MSG91 is retired -- replaced by the WhatsApp flow above. Kept as
+// a loud stub so any lingering caller fails obviously instead of silently
+// hitting the disabled verify-msg91-otp function. See sendPhoneOtp /
+// verifyPhoneOtp.
+export async function verifyMsg91AccessToken(_phone: string, _accessToken: string): Promise<{ password: string }> {
+  throw new Error("verifyMsg91AccessToken is deprecated. Use verifyPhoneOtp (WhatsApp OTP) instead.");
 }
 
 export async function signInWithPhonePassword(phone: string, password: string) {

@@ -1,23 +1,26 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, Phone } from "lucide-react-native";
+import { ArrowLeft, Mail, Phone } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import {
   CONSENT_VERSION,
   fetchProfessionalCredentials,
   getErrorMessage,
   recordConsent,
+  redeemReferralCode,
   requestRole,
+  resendEmailOtp,
+  resendPhoneOtp,
   signInWithPhonePassword,
   supabase,
-  verifyMsg91AccessToken,
+  verifyEmailOtp,
+  verifyPhoneOtp,
   toE164IndianPhone,
   type ProfessionalRole,
 } from "@curalink/api-client";
 import { Button, curalinkPlusFonts, useTheme } from "@curalink/ui";
-import { retryMsg91Otp, verifyMsg91Otp } from "../utils/msg91Widget";
 
-const CODE_LENGTH = 4;
+const CODE_LENGTH = 6;
 const RESEND_SECONDS = 30;
 
 export default function OtpScreen() {
@@ -71,13 +74,17 @@ export default function OtpScreen() {
         }),
       [colors],
     );
-  const { phone, name, role, consent, reqId } = useLocalSearchParams<{
-    phone: string;
+  const { phone, email, channel, name, role, consent, referralCode } = useLocalSearchParams<{
+    phone?: string;
+    email?: string;
+    // "email" = interim Supabase email OTP; anything else = phone (WhatsApp) OTP.
+    channel?: string;
     name?: string;
     role?: ProfessionalRole;
     consent?: string;
-    reqId: string;
+    referralCode?: string;
   }>();
+  const isEmail = channel === "email";
   const [code, setCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,9 +101,13 @@ export default function OtpScreen() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const accessToken = await verifyMsg91Otp(reqId, fullCode);
-      const { password } = await verifyMsg91AccessToken(phone, accessToken);
-      await signInWithPhonePassword(phone, password);
+      if (isEmail) {
+        // verifyOtp establishes the session itself -- no password bridge.
+        await verifyEmailOtp(email ?? "", fullCode);
+      } else {
+        const { password } = await verifyPhoneOtp(phone ?? "", fullCode);
+        await signInWithPhonePassword(phone ?? "", password);
+      }
 
       const { data: sessionData } = await supabase.auth.getSession();
       const user = sessionData.session?.user;
@@ -105,6 +116,14 @@ export default function OtpScreen() {
       }
       if (user && consent) {
         await recordConsent(user.id, CONSENT_VERSION);
+      }
+      if (user && referralCode) {
+        // Best-effort: an invalid/already-used code shouldn't block signup.
+        try {
+          await redeemReferralCode(referralCode);
+        } catch {
+          // ignore
+        }
       }
 
       if (!user) {
@@ -142,7 +161,11 @@ export default function OtpScreen() {
   async function handleResend() {
     setError(null);
     try {
-      await retryMsg91Otp(reqId);
+      if (isEmail) {
+        await resendEmailOtp(email ?? "");
+      } else {
+        await resendPhoneOtp(phone ?? "");
+      }
       setSecondsLeft(RESEND_SECONDS);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -170,12 +193,16 @@ export default function OtpScreen() {
       </Pressable>
 
       <View style={styles.iconChip}>
-        <Phone size={24} color={colors.primary} strokeWidth={1.8} />
+        {isEmail ? (
+          <Mail size={24} color={colors.primary} strokeWidth={1.8} />
+        ) : (
+          <Phone size={24} color={colors.primary} strokeWidth={1.8} />
+        )}
       </View>
-      <Text style={styles.title}>Verify your number</Text>
+      <Text style={styles.title}>{isEmail ? "Verify your email" : "Verify your number"}</Text>
       <Text style={styles.subtitle}>
         Enter the {CODE_LENGTH}-digit code sent to{" "}
-        <Text style={styles.subtitleAccent}>{toE164IndianPhone(phone ?? "")}</Text>
+        <Text style={styles.subtitleAccent}>{isEmail ? email : toE164IndianPhone(phone ?? "")}</Text>
         {"  "}
         <Text style={styles.changeLink} onPress={() => router.back()}>
           Change
