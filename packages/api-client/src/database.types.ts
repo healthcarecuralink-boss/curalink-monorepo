@@ -26,6 +26,7 @@ export type ChatChannelType = "care_team" | "handoff" | "escalation" | "ops" | "
 export type TeamMemberStatus = "active" | "inactive" | "suspended";
 export type ProfessionalRole = "nurse" | "doctor" | "vet" | "pharmacy" | "ambulance" | "admin";
 export type TimeOffStatus = "requested" | "approved" | "rejected";
+export type TeamInvitationStatus = "pending" | "accepted" | "rejected" | "cancelled";
 
 export interface Database {
   public: {
@@ -39,6 +40,7 @@ export interface Database {
           avatar_url: string | null;
           roles: string[];
           referral_code: string | null;
+          is_curalink_staff: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -50,6 +52,7 @@ export interface Database {
           avatar_url?: string | null;
           roles?: string[];
           referral_code?: string | null;
+          is_curalink_staff?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -140,6 +143,28 @@ export interface Database {
           joined_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["team_members"]["Insert"]>;
+        Relationships: [];
+      };
+      team_invitations: {
+        Row: {
+          id: string;
+          team_id: string;
+          professional_id: string;
+          role: string;
+          status: TeamInvitationStatus;
+          created_at: string;
+          responded_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          team_id: string;
+          professional_id: string;
+          role: string;
+          status?: TeamInvitationStatus;
+          created_at?: string;
+          responded_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["team_invitations"]["Insert"]>;
         Relationships: [];
       };
       payout_methods: {
@@ -945,13 +970,19 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       request_role: { Args: { p_role: string }; Returns: void };
-      approve_role: { Args: { p_professional_id: string; p_role: string; p_team_id: string }; Returns: void };
+      approve_role: { Args: { p_professional_id: string; p_role: string }; Returns: void };
       reject_role: { Args: { p_professional_id: string; p_role: string }; Returns: void };
       team_admin_of: { Args: { p_professional_id: string }; Returns: string | null };
       redeem_reward: { Args: { p_reward_id: string }; Returns: string };
       redeem_referral_code: { Args: { p_code: string }; Returns: void };
       pay_tip_from_wallet: { Args: { p_booking_id: string; p_amount: number }; Returns: void };
-      admin_add_team_member: { Args: { p_phone: string; p_role: string; p_team_id: string }; Returns: string };
+      invite_to_team: { Args: { p_professional_id: string; p_role: string; p_team_id: string }; Returns: string };
+      cancel_team_invitation: { Args: { p_invitation_id: string }; Returns: void };
+      respond_to_team_invitation: { Args: { p_invitation_id: string; p_accept: boolean }; Returns: void };
+      search_verified_professionals: {
+        Args: { p_query: string; p_role?: string | null };
+        Returns: { id: string; full_name: string; phone: string | null; roles: string[] }[];
+      };
       create_chat_channel: {
         Args: { p_type: string; p_booking_id: string | null; p_extra_member_id?: string | null };
         Returns: { id: string; type: ChatChannelType; booking_id: string | null; created_at: string };
@@ -969,6 +1000,7 @@ export interface Database {
       payout_status: PayoutStatus;
       chat_channel_type: ChatChannelType;
       team_member_status: TeamMemberStatus;
+      team_invitation_status: TeamInvitationStatus;
     };
   };
 }

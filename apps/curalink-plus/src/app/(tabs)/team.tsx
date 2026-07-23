@@ -1,20 +1,27 @@
 import { useState, useMemo } from "react";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarOff, Check, UserCheck, UserPlus, Users, X } from "lucide-react-native";
+import { CalendarOff, Check, Send, UserPlus, Users, X } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
-  approveRoleApplication,
+  cancelInvitation,
   createTeam,
   fetchMyTeam,
-  fetchPendingApplications,
+  fetchSentInvitations,
   fetchTeamRoster,
   fetchTeamTimeOff,
-  rejectRoleApplication,
   reviewTimeOff,
   useSessionStore,
+  type TeamInvitationStatus,
 } from "@curalink/api-client";
-import { Button, Card, EmptyState, Skeleton, curalinkPlusFonts, useTheme } from "@curalink/ui";
+import { Button, Card, EmptyState, Skeleton, StatusPill, curalinkPlusFonts, useTheme } from "@curalink/ui";
+
+const invitationStatusColors: Record<TeamInvitationStatus, { fg: string; bg: string }> = {
+  pending: { fg: "#B7791F", bg: "#FFF6E5" },
+  accepted: { fg: "#0B5A45", bg: "#E8F5F0" },
+  rejected: { fg: "#DC3545", bg: "#FCE8E8" },
+  cancelled: { fg: "#64748B", bg: "#EEF1F4" },
+};
 
 
 export default function TeamScreen() {
@@ -57,9 +64,9 @@ export default function TeamScreen() {
     queryFn: () => fetchTeamRoster(team?.id as string),
     enabled: Boolean(team?.id),
   });
-  const { data: applications } = useQuery({
-    queryKey: ["pendingApplications"],
-    queryFn: () => fetchPendingApplications(),
+  const { data: invitations } = useQuery({
+    queryKey: ["sentInvitations", team?.id],
+    queryFn: () => fetchSentInvitations(team?.id as string),
     enabled: Boolean(team?.id),
   });
   const rosterIds = (roster ?? []).map((m) => m.professional_id);
@@ -81,25 +88,11 @@ export default function TeamScreen() {
     }
   }
 
-  async function handleApprove(professionalId: string, role: string) {
-    if (!team?.id) return;
-    const key = `${professionalId}-${role}`;
-    setActioningKey(key);
+  async function handleCancelInvitation(invitationId: string) {
+    setActioningKey(invitationId);
     try {
-      await approveRoleApplication(professionalId, role, team.id);
-      void queryClient.invalidateQueries({ queryKey: ["pendingApplications"] });
-      void queryClient.invalidateQueries({ queryKey: ["teamRoster", team.id] });
-    } finally {
-      setActioningKey(null);
-    }
-  }
-
-  async function handleReject(professionalId: string, role: string) {
-    const key = `${professionalId}-${role}`;
-    setActioningKey(key);
-    try {
-      await rejectRoleApplication(professionalId, role);
-      void queryClient.invalidateQueries({ queryKey: ["pendingApplications"] });
+      await cancelInvitation(invitationId);
+      void queryClient.invalidateQueries({ queryKey: ["sentInvitations", team?.id] });
     } finally {
       setActioningKey(null);
     }
@@ -122,48 +115,49 @@ export default function TeamScreen() {
       {team === null ? (
         <Card style={{ gap: 10, alignItems: "center" }}>
           <Text style={styles.emptyTitle}>No team yet</Text>
-          <Text style={styles.emptyBody}>Create your team to start approving applications and managing a roster.</Text>
+          <Text style={styles.emptyBody}>Create your team to start inviting verified professionals and managing a roster.</Text>
           <Button label={isCreatingTeam ? "Creating..." : "Create your team"} disabled={isCreatingTeam} onPress={() => void handleCreateTeam()} />
         </Card>
       ) : (
         <>
           <View style={styles.sectionHeaderRow}>
-            <UserCheck size={16} color={colors.primary} strokeWidth={1.8} />
-            <Text style={styles.sectionTitle}>Pending applications</Text>
+            <Send size={16} color={colors.primary} strokeWidth={1.8} />
+            <Text style={[styles.sectionTitle, { flex: 1 }]}>Sent invitations</Text>
+            <Button
+              label="Invite"
+              variant="secondary"
+              icon={<UserPlus size={15} color={colors.ink} />}
+              onPress={() => router.push("/add-team-member")}
+            />
           </View>
-          {applications === undefined ? (
+          {invitations === undefined ? (
             <Skeleton height={70} borderRadius={13} />
-          ) : applications.length === 0 ? (
-            <EmptyState icon={<UserCheck size={24} color={colors.primary} strokeWidth={1.6} />} title="No pending applications" />
+          ) : invitations.length === 0 ? (
+            <EmptyState icon={<Send size={24} color={colors.primary} strokeWidth={1.6} />} title="No invitations sent yet" />
           ) : (
             <View style={{ gap: 8 }}>
-              {applications.flatMap((application) =>
-                application.credentials.pending_roles.map((role) => {
-                  const key = `${application.credentials.profile_id}-${role}`;
-                  const isActioning = actioningKey === key;
-                  return (
-                    <Card key={key} style={styles.applicationCard}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.applicantName}>{application.applicant?.full_name ?? "Applicant"}</Text>
-                        <Text style={styles.applicantRole}>{role}</Text>
-                      </View>
+              {invitations.map(({ invitation, profile }) => {
+                const isActioning = actioningKey === invitation.id;
+                const statusColor = invitationStatusColors[invitation.status];
+                return (
+                  <Card key={invitation.id} style={styles.applicationCard}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.applicantName}>{profile?.full_name ?? "Applicant"}</Text>
+                      <Text style={styles.applicantRole}>{invitation.role}</Text>
+                    </View>
+                    <StatusPill label={invitation.status} {...statusColor} />
+                    {invitation.status === "pending" ? (
                       <Button
                         size="icon"
                         variant="secondary"
                         disabled={isActioning}
                         icon={<X size={16} color={colors.error} />}
-                        onPress={() => void handleReject(application.credentials.profile_id, role)}
+                        onPress={() => void handleCancelInvitation(invitation.id)}
                       />
-                      <Button
-                        size="icon"
-                        disabled={isActioning}
-                        icon={<Check size={16} color="#FFFFFF" />}
-                        onPress={() => void handleApprove(application.credentials.profile_id, role)}
-                      />
-                    </Card>
-                  );
-                }),
-              )}
+                    ) : null}
+                  </Card>
+                );
+              })}
             </View>
           )}
 
@@ -202,13 +196,7 @@ export default function TeamScreen() {
           ) : null}
 
           <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.sectionTitle, { flex: 1 }]}>Roster</Text>
-            <Button
-              label="Add member"
-              variant="secondary"
-              icon={<UserPlus size={15} color={colors.ink} />}
-              onPress={() => router.push("/add-team-member")}
-            />
+            <Text style={styles.sectionTitle}>Roster</Text>
           </View>
           {roster === undefined ? (
             <Skeleton height={80} borderRadius={13} />

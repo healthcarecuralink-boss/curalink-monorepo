@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { router } from "expo-router";
-import { ChevronDown, MessageCircleHeart, Siren } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, MessageCircleHeart, Send, Siren } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSessionStore, type ProfessionalRole } from "@curalink/api-client";
+import { fetchMyTeamInvitations, useSessionStore, type ProfessionalRole } from "@curalink/api-client";
 import { curalinkPlusFonts, roleAccents, roleTints, useTheme } from "@curalink/ui";
 import { AdminHome } from "../../components/homes/AdminHome";
 import { AmbulanceHome } from "../../components/homes/AmbulanceHome";
@@ -67,6 +68,19 @@ export default function HomeScreen() {
     assistantIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: "#E8F5F0", alignItems: "center", justifyContent: "center" },
     assistantTitle: { fontFamily: curalinkPlusFonts.headingSemibold, fontSize: 13.5, color: colors.ink },
     assistantSubtitle: { fontSize: 11, color: colors.muted, marginTop: 2 },
+    invitationBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      backgroundColor: "#FFF6E5",
+      borderWidth: 1,
+      borderColor: "#F0D9A6",
+      borderRadius: 16,
+      padding: 14,
+    },
+    invitationIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+    invitationTitle: { fontFamily: curalinkPlusFonts.headingSemibold, fontSize: 13.5, color: colors.ink },
+    invitationSubtitle: { fontSize: 11, color: colors.muted, marginTop: 2 },
     switcherSheet: {
       backgroundColor: colors.surface,
       borderWidth: 1,
@@ -88,6 +102,12 @@ export default function HomeScreen() {
 
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
   const roles = profile?.roles ?? [];
+
+  const { data: invitations } = useQuery({
+    queryKey: ["myTeamInvitations", profile?.id],
+    queryFn: () => fetchMyTeamInvitations(profile?.id as string),
+    enabled: Boolean(profile?.id),
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -114,6 +134,20 @@ export default function HomeScreen() {
           ) : null}
         </View>
       </View>
+
+      {invitations && invitations.length > 0 ? (
+        <Pressable style={styles.invitationBanner} onPress={() => router.push("/team-invitations")}>
+          <View style={styles.invitationIcon}>
+            <Send size={18} color="#B7791F" strokeWidth={1.8} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.invitationTitle}>
+              You have {invitations.length} team invitation{invitations.length > 1 ? "s" : ""}
+            </Text>
+            <Text style={styles.invitationSubtitle}>A partner agency wants you on their roster</Text>
+          </View>
+        </Pressable>
+      ) : null}
 
       <Pressable style={styles.assistantBanner} onPress={() => router.push("/cura-assistant")}>
         <View style={styles.assistantIcon}>

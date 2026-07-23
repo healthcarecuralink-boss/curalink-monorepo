@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, UserPlus } from "lucide-react-native";
+import { ArrowLeft, Send, UserPlus } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { addTeamMemberByPhone, fetchMyTeam, useSessionStore } from "@curalink/api-client";
-import { Button, Card, TextField, curalinkPlusFonts, useTheme } from "@curalink/ui";
+import { fetchMyTeam, inviteToTeam, searchVerifiedProfessionals, useSessionStore } from "@curalink/api-client";
+import { Button, Card, EmptyState, TextField, curalinkPlusFonts, useTheme } from "@curalink/ui";
 
 const ROLES = ["nurse", "doctor", "vet", "pharmacy", "ambulance"] as const;
 
@@ -43,7 +43,9 @@ export default function AddTeamMemberScreen() {
         chipTextSelected: { color: colors.primary },
         note: { fontSize: 11.5, color: colors.muted },
         errorText: { fontSize: 12, color: colors.error },
-        successCard: { gap: 6, alignItems: "center" },
+        resultRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+        resultName: { fontSize: 13.5, fontWeight: "700", color: colors.ink },
+        resultPhone: { fontSize: 11.5, color: colors.muted, marginTop: 1 },
       }),
     [colors],
   );
@@ -58,26 +60,31 @@ export default function AddTeamMemberScreen() {
     enabled: Boolean(adminId),
   });
 
-  const [phone, setPhone] = useState("");
   const [role, setRole] = useState<(typeof ROLES)[number] | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [addedName, setAddedName] = useState<string | null>(null);
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [invitedIds, setInvitedIds] = useState<string[]>([]);
 
-  async function handleAdd() {
-    if (!team?.id || !role || !phone.trim()) return;
-    setIsSubmitting(true);
+  const trimmedQuery = query.trim();
+  const { data: results } = useQuery({
+    queryKey: ["verifiedProfessionalSearch", trimmedQuery, role],
+    queryFn: () => searchVerifiedProfessionals(trimmedQuery, role ?? undefined),
+    enabled: Boolean(role) && trimmedQuery.length >= 3,
+  });
+
+  async function handleInvite(professionalId: string) {
+    if (!team?.id || !role) return;
+    setInvitingId(professionalId);
     setError(null);
     try {
-      await addTeamMemberByPhone(phone.trim(), role, team.id);
-      void queryClient.invalidateQueries({ queryKey: ["teamRoster", team.id] });
-      setAddedName(phone.trim());
-      setPhone("");
-      setRole(null);
+      await inviteToTeam(professionalId, role, team.id);
+      setInvitedIds((ids) => [...ids, professionalId]);
+      void queryClient.invalidateQueries({ queryKey: ["sentInvitations", team.id] });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't add that number");
+      setError(e instanceof Error ? e.message : "Couldn't send that request");
     } finally {
-      setIsSubmitting(false);
+      setInvitingId(null);
     }
   }
 
@@ -93,23 +100,15 @@ export default function AddTeamMemberScreen() {
         >
           <ArrowLeft size={18} color={colors.ink} strokeWidth={2} />
         </Pressable>
-        <Text style={styles.title}>Add team member</Text>
+        <Text style={styles.title}>Invite team member</Text>
       </View>
 
       <Text style={styles.note}>
-        Add someone who already has a CuraLink Plus account straight onto your roster, without waiting for them to apply.
+        Search CuraLink-verified professionals by name or phone and send them a request to join your roster. They'll
+        need to accept before they show up as a team member.
       </Text>
 
-      {addedName ? (
-        <Card style={styles.successCard}>
-          <UserPlus size={22} color={colors.primary} strokeWidth={1.6} />
-          <Text style={{ fontSize: 13, fontWeight: "600", color: colors.ink }}>Added to your roster</Text>
-        </Card>
-      ) : null}
-
       <Card style={{ gap: 12 }}>
-        <TextField label="Phone number" placeholder="+91XXXXXXXXXX" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-
         <Text style={styles.fieldLabel}>Role</Text>
         <View style={styles.chipRow}>
           {ROLES.map((r) => (
@@ -119,14 +118,46 @@ export default function AddTeamMemberScreen() {
           ))}
         </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-        <Button
-          label={isSubmitting ? "Adding..." : "Add to roster"}
-          disabled={isSubmitting || !phone.trim() || !role}
-          onPress={() => void handleAdd()}
+        <TextField
+          label="Search by name, phone, or email"
+          placeholder="e.g. Priya Nair, +91XXXXXXXXXX, or priya@email.com"
+          value={query}
+          onChangeText={setQuery}
         />
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </Card>
+
+      {!role ? null : trimmedQuery.length < 3 ? (
+        <Text style={styles.note}>Type at least 3 characters to search.</Text>
+      ) : results === undefined ? null : results.length === 0 ? (
+        <EmptyState
+          icon={<UserPlus size={24} color={colors.primary} strokeWidth={1.6} />}
+          title="No matching verified professionals"
+        />
+      ) : (
+        <View style={{ gap: 8 }}>
+          {results.map((professional) => {
+            const alreadyInvited = invitedIds.includes(professional.id);
+            return (
+              <Card key={professional.id} style={styles.resultRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.resultName}>{professional.full_name}</Text>
+                  <Text style={styles.resultPhone}>{professional.phone ?? "—"}</Text>
+                </View>
+                <Button
+                  label={alreadyInvited ? "Request sent" : "Send request"}
+                  variant="secondary"
+                  size="default"
+                  icon={alreadyInvited ? undefined : <Send size={14} color={colors.ink} />}
+                  disabled={alreadyInvited || invitingId === professional.id}
+                  onPress={() => void handleInvite(professional.id)}
+                />
+              </Card>
+            );
+          })}
+        </View>
+      )}
     </ScrollView>
   );
 }

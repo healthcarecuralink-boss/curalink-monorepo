@@ -62,16 +62,24 @@ export default function ProfessionalDetailsStep2() {
   const [uploaded, setUploaded] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Agency owners (admin) are lighter-weight to verify than a licensed
+  // nurse/doctor/vet -- CuraLink staff still reviews them, but documents
+  // aren't required to move on. Every other role still needs all four.
+  const docsRequired = role !== "admin";
   const allUploaded = documentSlots.every((slot) => uploaded[slot.key]);
+  const canContinue = !docsRequired || allUploaded;
 
   async function handleContinue() {
     const userId = session?.user.id;
     if (!userId) return;
     setIsSubmitting(true);
     try {
-      await updateProfessionalCredentials(userId, {
-        docs: documentSlots.map((slot) => ({ type: slot.key, status: "pending_review" })),
-      });
+      const uploadedSlots = documentSlots.filter((slot) => uploaded[slot.key]);
+      if (uploadedSlots.length > 0) {
+        await updateProfessionalCredentials(userId, {
+          docs: uploadedSlots.map((slot) => ({ type: slot.key, status: "pending_review" })),
+        });
+      }
       router.push({ pathname: "/bank-details", params: { role } });
     } finally {
       setIsSubmitting(false);
@@ -94,7 +102,9 @@ export default function ProfessionalDetailsStep2() {
       </View>
       <Text style={styles.step}>2/2</Text>
       <Text style={styles.title}>Upload documents</Text>
-      <Text style={styles.subtitle}>Clear photos or scans. We verify within 24 hours.</Text>
+      <Text style={styles.subtitle}>
+        {docsRequired ? "Clear photos or scans. We verify within 24 hours." : "Optional for agencies — add them now or skip and upload later."}
+      </Text>
 
       <View style={styles.grid}>
         {documentSlots.map((slot) => {
@@ -121,8 +131,8 @@ export default function ProfessionalDetailsStep2() {
       </View>
 
       <Button
-        label={isSubmitting ? "Saving..." : "Continue"}
-        disabled={!allUploaded || isSubmitting}
+        label={isSubmitting ? "Saving..." : !docsRequired && !allUploaded ? "Skip for now" : "Continue"}
+        disabled={!canContinue || isSubmitting}
         onPress={() => void handleContinue()}
         style={styles.cta}
       />

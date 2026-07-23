@@ -37,7 +37,7 @@ export type { LegalSection } from "./legalContent";
 export { getErrorMessage } from "./errors";
 export { PROFESSIONAL_ROLES, isProfessionalRole } from "./types";
 export type { Profile, ProfessionalProfile, ProfessionalRole } from "./types";
-export type { Database, Json } from "./database.types";
+export type { Database, Json, TeamInvitationStatus } from "./database.types";
 
 export {
   fetchFamilyMembers,
@@ -111,8 +111,10 @@ export {
   cancelTimeOff,
   fetchTeamTimeOff,
   reviewTimeOff,
+  fetchMyTeamInvitations,
+  respondToTeamInvitation,
 } from "./professional";
-export type { JobDetail, VisitFieldsPatch } from "./professional";
+export type { JobDetail, VisitFieldsPatch, IncomingInvitation } from "./professional";
 
 export {
   fetchConsumerPharmacyOrders,
@@ -143,9 +145,6 @@ export {
 export type { AmbulanceRequestDetail } from "./ambulanceRequests";
 
 export {
-  fetchPendingApplications,
-  approveRoleApplication,
-  rejectRoleApplication,
   createTeam,
   fetchTeamActiveBookings,
   fetchTeamActiveAmbulanceRequests,
@@ -155,7 +154,10 @@ export {
   fetchTeamPharmacyRevenue,
   fetchTeamPayoutRecords,
   fetchTeamAllBookings,
-  addTeamMemberByPhone,
+  searchVerifiedProfessionals,
+  inviteToTeam,
+  cancelInvitation,
+  fetchSentInvitations,
   fetchTeamMemberDetail,
   fetchTeamRosterWithProfiles,
   updateTeamMemberStatus,
@@ -167,7 +169,10 @@ export {
   fetchEscalatedBookings,
   fetchEscalatedAmbulanceRequests,
 } from "./admin";
-export type { PendingApplication, TeamMemberDetail, RosterEntry } from "./admin";
+export type { VerifiedProfessional, SentInvitation, TeamMemberDetail, RosterEntry } from "./admin";
+
+export { fetchPendingVerifications, approveVerification, rejectVerification } from "./staff";
+export type { PendingVerification } from "./staff";
 
 export {
   fetchMyChannels,

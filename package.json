@@ -9,6 +9,7 @@
     "dev": "turbo run dev",
     "dev:curalink": "turbo run dev --filter=curalink",
     "dev:curalink-plus": "turbo run dev --filter=curalink-plus",
+    "dev:curalink-team": "turbo run dev --filter=curalink-team",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

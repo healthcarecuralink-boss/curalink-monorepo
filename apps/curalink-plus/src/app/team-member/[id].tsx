@@ -80,7 +80,7 @@ export default function TeamMemberDetailScreen() {
     );
   }
 
-  const { member, profile, professionalProfile, credentials } = detail;
+  const { member, profile, professionalProfile } = detail;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -110,7 +110,6 @@ export default function TeamMemberDetailScreen() {
             <Row label="On duty" value={professionalProfile.is_on_duty ? "Yes" : "No"} colors={colors} />
           </>
         ) : null}
-        <Row label="Verification" value={credentials?.verification_status ?? "—"} colors={colors} />
       </Card>
 
       <Card style={styles.docsRow}>

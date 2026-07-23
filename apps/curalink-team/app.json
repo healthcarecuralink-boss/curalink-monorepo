@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "curalink-team",
+    "slug": "curalink-team",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "curalinkteam",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.anonymous.curalinkteam"
+    },
+    "android": {
+      "package": "com.anonymous.curalinkteam"
+    },
+    "web": {
+      "output": "single"
+    },
+    "experiments": {
+      "typedRoutes": true,
+      "baseUrl": "/app"
+    },
+    "plugins": ["expo-router"]
+  }
+}

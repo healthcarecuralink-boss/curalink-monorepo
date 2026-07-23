@@ -2,55 +2,12 @@ import { supabase } from "./supabaseClient";
 import type { Database } from "./database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-type ProfessionalCredentials = Database["public"]["Tables"]["professional_credentials"]["Row"];
 type ProfessionalProfile = Database["public"]["Tables"]["professional_profiles"]["Row"];
 type Booking = Database["public"]["Tables"]["bookings"]["Row"];
 type PayoutRecord = Database["public"]["Tables"]["payout_records"]["Row"];
 type TeamMember = Database["public"]["Tables"]["team_members"]["Row"];
+type TeamInvitation = Database["public"]["Tables"]["team_invitations"]["Row"];
 type AmbulanceRequest = Database["public"]["Tables"]["ambulance_requests"]["Row"];
-
-export interface PendingApplication {
-  credentials: ProfessionalCredentials;
-  applicant: Profile | null;
-}
-
-// Any admin can see any unaffiliated applicant (see the admin_and_chat_helpers
-// migration) -- pending_roles is not empty means "hasn't been approved onto a
-// team yet", so there's no existing team relationship to scope this by.
-export async function fetchPendingApplications(): Promise<PendingApplication[]> {
-  const { data: allCredentials, error } = await supabase.from("professional_credentials").select("*");
-  if (error) throw error;
-  const credentialsRows = allCredentials.filter((c) => c.pending_roles.length > 0);
-  if (credentialsRows.length === 0) return [];
-
-  const { data: profiles, error: profilesError } = await supabase
-    .from("profiles")
-    .select("*")
-    .in(
-      "id",
-      credentialsRows.map((c) => c.profile_id),
-    );
-  if (profilesError) throw profilesError;
-
-  return credentialsRows.map((credentials) => ({
-    credentials,
-    applicant: profiles.find((p) => p.id === credentials.profile_id) ?? null,
-  }));
-}
-
-export async function approveRoleApplication(professionalId: string, role: string, teamId: string): Promise<void> {
-  const { error } = await supabase.rpc("approve_role", {
-    p_professional_id: professionalId,
-    p_role: role,
-    p_team_id: teamId,
-  });
-  if (error) throw error;
-}
-
-export async function rejectRoleApplication(professionalId: string, role: string): Promise<void> {
-  const { error } = await supabase.rpc("reject_role", { p_professional_id: professionalId, p_role: role });
-  if (error) throw error;
-}
 
 export async function createTeam(adminId: string, name: string): Promise<Database["public"]["Tables"]["teams"]["Row"]> {
   const { data, error } = await supabase.from("teams").insert({ admin_id: adminId, name }).select().single();
@@ -184,12 +141,29 @@ export async function fetchTeamAdminOf(professionalId: string): Promise<string |
   return data;
 }
 
-// Adds an existing registered user directly to the admin's team by phone
-// number, skipping the request_role/approve_role application flow (README:
-// "Add team member", distinct from approving a pending application).
-export async function addTeamMemberByPhone(phone: string, role: string, teamId: string): Promise<string> {
-  const { data, error } = await supabase.rpc("admin_add_team_member", {
-    p_phone: phone,
+// Search for already CuraLink-verified professionals to invite onto the
+// team (see search_verified_professionals -- the role filter matches
+// against profiles.roles, which only gains an entry once CuraLink staff has
+// approved that role).
+export interface VerifiedProfessional {
+  id: string;
+  full_name: string;
+  phone: string | null;
+  roles: string[];
+}
+
+export async function searchVerifiedProfessionals(query: string, role?: string): Promise<VerifiedProfessional[]> {
+  const { data, error } = await supabase.rpc("search_verified_professionals", {
+    p_query: query,
+    p_role: role ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function inviteToTeam(professionalId: string, role: string, teamId: string): Promise<string> {
+  const { data, error } = await supabase.rpc("invite_to_team", {
+    p_professional_id: professionalId,
     p_role: role,
     p_team_id: teamId,
   });
@@ -197,11 +171,46 @@ export async function addTeamMemberByPhone(phone: string, role: string, teamId: 
   return data;
 }
 
+export async function cancelInvitation(invitationId: string): Promise<void> {
+  const { error } = await supabase.rpc("cancel_team_invitation", { p_invitation_id: invitationId });
+  if (error) throw error;
+}
+
+export interface SentInvitation {
+  invitation: TeamInvitation;
+  profile: Profile | null;
+}
+
+// Every invitation this team has sent, regardless of status, for the "Sent
+// invitations" list (pending/accepted/rejected/cancelled).
+export async function fetchSentInvitations(teamId: string): Promise<SentInvitation[]> {
+  const { data: invitations, error } = await supabase
+    .from("team_invitations")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  if (invitations.length === 0) return [];
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("*")
+    .in(
+      "id",
+      invitations.map((i) => i.professional_id),
+    );
+  if (profilesError) throw profilesError;
+
+  return invitations.map((invitation) => ({
+    invitation,
+    profile: profiles.find((p) => p.id === invitation.professional_id) ?? null,
+  }));
+}
+
 export interface TeamMemberDetail {
   member: TeamMember;
   profile: Profile | null;
   professionalProfile: ProfessionalProfile | null;
-  credentials: ProfessionalCredentials | null;
 }
 
 export interface RosterEntry {
@@ -234,13 +243,12 @@ export async function fetchTeamMemberDetail(teamMemberId: string): Promise<TeamM
   if (error) throw error;
   if (!member) return null;
 
-  const [{ data: profile }, { data: professionalProfile }, { data: credentials }] = await Promise.all([
+  const [{ data: profile }, { data: professionalProfile }] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", member.professional_id).maybeSingle(),
     supabase.from("professional_profiles").select("*").eq("profile_id", member.professional_id).maybeSingle(),
-    supabase.from("professional_credentials").select("*").eq("profile_id", member.professional_id).maybeSingle(),
   ]);
 
-  return { member, profile: profile ?? null, professionalProfile: professionalProfile ?? null, credentials: credentials ?? null };
+  return { member, profile: profile ?? null, professionalProfile: professionalProfile ?? null };
 }
 
 export async function updateTeamMemberStatus(teamMemberId: string, status: Database["public"]["Tables"]["team_members"]["Row"]["status"]): Promise<void> {

@@ -16,6 +16,13 @@
       "port": 19011
     },
     {
+      "name": "curalink-team-web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web", "--port", "19012"],
+      "cwd": "apps/curalink-team",
+      "port": 19012
+    },
+    {
       "name": "curalink-dist",
       "runtimeExecutable": "node",
       "runtimeArgs": ["scripts/serve-dist.mjs", "apps/curalink", "4173"],

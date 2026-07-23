@@ -14,10 +14,10 @@ const steps = [
 ];
 
 // Deliberately no "tap to simulate approval" shortcut here (the prototype
-// has one) -- approve_role is admin-only and RLS-enforced (see Step 2), so
-// there is no legitimate client-side path to self-approve. This screen just
-// polls for the real thing, which happens once an admin approves via the
-// dashboard built in Step 10.
+// has one) -- approve_role is restricted to CuraLink staff and RLS-enforced,
+// so there is no legitimate client-side path to self-approve. This screen
+// just polls for the real thing, which happens once CuraLink staff approves
+// via the curalink-team app's verification queue.
 export default function VerificationPendingScreen() {
   const { colors } = useTheme();
   const styles = useMemo(

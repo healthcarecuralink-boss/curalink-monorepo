@@ -10,6 +10,7 @@ type Prescription = Database["public"]["Tables"]["prescriptions"]["Row"];
 type PrescriptionInsert = Database["public"]["Tables"]["prescriptions"]["Insert"];
 type TimeOff = Database["public"]["Tables"]["professional_time_off"]["Row"];
 type TimeOffInsert = Database["public"]["Tables"]["professional_time_off"]["Insert"];
+type TeamInvitation = Database["public"]["Tables"]["team_invitations"]["Row"];
 
 export async function fetchProfessionalProfile(profileId: string): Promise<ProfessionalProfile | null> {
   const { data, error } = await supabase
@@ -343,5 +344,45 @@ export async function fetchTeamTimeOff(professionalIds: string[]): Promise<TimeO
 
 export async function reviewTimeOff(id: string, status: "approved" | "rejected"): Promise<void> {
   const { error } = await supabase.rpc("admin_review_time_off", { p_time_off_id: id, p_status: status });
+  if (error) throw error;
+}
+
+export interface IncomingInvitation {
+  invitation: TeamInvitation;
+  teamName: string | null;
+}
+
+// Incoming, still-open team invitations for a professional (partner-initiated
+// -- see invite_to_team/respond_to_team_invitation in admin.ts).
+export async function fetchMyTeamInvitations(professionalId: string): Promise<IncomingInvitation[]> {
+  const { data: invitations, error } = await supabase
+    .from("team_invitations")
+    .select("*")
+    .eq("professional_id", professionalId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  if (invitations.length === 0) return [];
+
+  const { data: teams, error: teamsError } = await supabase
+    .from("teams")
+    .select("id, name")
+    .in(
+      "id",
+      invitations.map((i) => i.team_id),
+    );
+  if (teamsError) throw teamsError;
+
+  return invitations.map((invitation) => ({
+    invitation,
+    teamName: teams.find((t) => t.id === invitation.team_id)?.name ?? null,
+  }));
+}
+
+export async function respondToTeamInvitation(invitationId: string, accept: boolean): Promise<void> {
+  const { error } = await supabase.rpc("respond_to_team_invitation", {
+    p_invitation_id: invitationId,
+    p_accept: accept,
+  });
   if (error) throw error;
 }
