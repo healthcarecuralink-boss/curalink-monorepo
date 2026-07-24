@@ -1,0 +1,79 @@
+/* Shared design system for curalinkplus.co.in marketing subpages.
+   Extracted from the homepage (web/index.html) so new pages don't have to
+   duplicate the whole file's CSS -- the homepage-specific dashboard demo
+   components stay inline there. */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --teal:#1D9E75;--teal-l:rgba(29,158,117,0.13);--teal-m:#5DCAA5;--teal-d:#0f6e56;--teal-glow:rgba(29,158,117,0.28);
+  --navy:#1a2f5e;--navy-d:#0a1628;--navy-c:#111e35;--navy-c2:#162035;--nb:rgba(255,255,255,0.07);
+  --text:rgba(255,255,255,0.92);--muted:rgba(255,255,255,0.5);--dim:rgba(255,255,255,0.28);
+}
+body{font-family:'DM Sans',sans-serif;background:var(--navy-d);color:var(--text);overflow-x:hidden;line-height:1.6}
+h1,h2,h3,h4{font-family:'Sora',sans-serif;line-height:1.2}
+a{text-decoration:none;color:inherit}
+button{font-family:'DM Sans',sans-serif;cursor:pointer}
+
+.lnav{position:fixed;top:0;left:0;right:0;z-index:999;height:64px;background:rgba(10,22,40,.93);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;padding:0 5vw}
+.lnav-logo img{height:32px}
+.lnav-links{display:flex;gap:22px}
+.lnav-links a{font-size:14px;font-weight:500;color:rgba(255,255,255,.5);transition:color .2s}
+.lnav-links a:hover{color:#fff}
+.lnav-right{display:flex;gap:10px;align-items:center}
+.btn-ghost{padding:8px 17px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:13px;font-weight:600;color:#fff;background:transparent;transition:all .2s}
+.btn-ghost:hover{border-color:var(--teal-m);color:var(--teal-m)}
+.btn-solid{padding:8px 18px;border-radius:8px;border:none;background:var(--teal);color:#fff;font-size:13px;font-weight:600;transition:all .2s}
+.btn-solid:hover{background:var(--teal-d)}
+
+.orb{position:absolute;border-radius:50%;pointer-events:none}
+.orb1{width:650px;height:650px;top:-180px;right:-180px;background:radial-gradient(circle,rgba(29,158,117,.13),transparent 65%)}
+.crumb{max-width:1060px;margin:0 auto;padding:100px 5vw 0;font-size:13px;color:var(--muted);position:relative}
+.crumb a{color:var(--muted)}
+.crumb a:hover{color:var(--teal-m)}
+.pg-hero{min-height:60vh;background:linear-gradient(155deg,#0a1628 0%,#1a2f5e 55%,#1a3a6e 100%);position:relative;overflow:hidden;display:flex;align-items:center;padding:40px 5vw 70px}
+.pg-hero-i{max-width:1060px;margin:0 auto;position:relative}
+.pg-hero h1{font-weight:800;color:#fff;font-size:clamp(32px,4.4vw,52px);letter-spacing:-1.3px;line-height:1.08;margin-bottom:20px;max-width:740px}
+.pg-hero h1 span{color:var(--teal-m)}
+.pg-hero p.lead{font-size:18px;color:var(--muted);line-height:1.7;max-width:600px;margin-bottom:32px}
+.badge{display:inline-flex;align-items:center;gap:10px;background:rgba(93,202,165,.13);border:1px solid rgba(93,202,165,.3);color:var(--teal-m);padding:9px 18px;border-radius:100px;font-size:13px;font-weight:700;margin-bottom:24px}
+.bdot{width:8px;height:8px;background:var(--teal-m);border-radius:50%}
+
+.content-sec{padding:64px 5vw;max-width:1060px;margin:0 auto;background:var(--navy-d)}
+.content-sec + .content-sec{border-top:1px solid var(--nb)}
+.sh2{font-size:clamp(26px,3.6vw,40px);font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:14px}
+.ssub{font-size:16px;color:var(--muted);max-width:620px;line-height:1.7}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px}
+.feat-card{background:var(--navy-c);border:1px solid var(--nb);border-radius:16px;padding:24px}
+.feat-card .ic{width:42px;height:42px;background:var(--teal-l);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:14px}
+.feat-card h3{font-size:16px;font-weight:700;color:#fff;margin-bottom:8px;font-family:'Sora',sans-serif}
+.feat-card p{font-size:13.5px;color:var(--muted);line-height:1.6}
+.check-list{list-style:none;margin-top:20px}
+.check-list li{display:flex;align-items:flex-start;gap:10px;font-size:15px;color:var(--muted);margin-bottom:12px}
+.check-list li::before{content:"✓";color:var(--teal-m);font-weight:800;flex-shrink:0}
+
+.cta-band{background:var(--navy-c2);padding:64px 5vw;text-align:center;border-top:1px solid var(--nb)}
+.cta-band h2{color:#fff;font-size:clamp(24px,3.2vw,36px);font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+.cta-band p{color:var(--muted);margin-bottom:28px;max-width:520px;margin-left:auto;margin-right:auto}
+
+.lform{max-width:440px;margin:0 auto;background:var(--navy-c);border:1px solid var(--nb);border-radius:16px;padding:24px;text-align:left}
+.lform input{width:100%;padding:12px 14px;border:1.5px solid var(--nb);border-radius:9px;font-size:14px;font-family:inherit;margin-bottom:11px;color:#fff;background:rgba(255,255,255,.03)}
+.lform input::placeholder{color:var(--dim)}
+.lform input:focus{outline:none;border-color:var(--teal)}
+.lform button{width:100%;border:none}
+.lform .ok{color:var(--teal-m);font-weight:700;font-size:14px;text-align:center;display:none}
+.lform .ok.show{display:block}
+
+footer{background:var(--navy-c);border-top:1px solid var(--nb);padding:40px 5vw 20px}
+.footer-inner{max-width:1060px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:28px}
+.footer-col h4{font-size:12px;font-weight:700;color:#fff;margin-bottom:11px}
+.footer-col a{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;transition:color .15s}
+.footer-col a:hover{color:var(--teal-m)}
+.footer-bottom{border-top:1px solid var(--nb);padding-top:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:#fff;color:var(--navy-d);padding:13px 22px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .3s;z-index:2000}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:880px){.feat-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.lnav-links{display:none}}

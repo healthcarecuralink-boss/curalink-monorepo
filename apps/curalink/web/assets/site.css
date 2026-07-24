@@ -1,0 +1,95 @@
+/* Shared design system for curalink.co.in marketing subpages.
+   Extracted from the homepage (web/index.html) so new pages don't have to
+   duplicate the whole file's CSS -- only homepage-specific components (hero
+   phone mockup, live dashboard demo, chatbot) stay inline there. */
+
+:root{
+  --g:#00C27C; --g2:#00E392; --gd:#057A4E; --gl:rgba(0,194,124,.14); --gp:#E9FBF3;
+  --ink:#0A1B2A; --s:#0B1D2E; --sm:#142A3E; --sl:#1D3A52; --cr:#FAFAF8; --mt:#51677C;
+  --bd:rgba(11,29,46,.10); --card:#FFFFFF; --sh:0 2px 24px rgba(11,29,46,.07); --shx:0 24px 80px rgba(11,29,46,.14);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:"Inter",sans-serif;background:var(--cr);color:var(--ink);overflow-x:hidden;line-height:1.65;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:3px solid var(--g);outline-offset:2px;border-radius:6px}
+img{max-width:100%}
+a.skip{position:absolute;left:14px;top:-60px;z-index:2000;background:var(--s);color:#fff;padding:11px 18px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;transition:top .2s}
+a.skip:focus{top:14px}
+
+#mainNav{position:fixed;top:0;left:0;right:0;z-index:999;height:70px;padding:0 36px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(250,250,248,0.94);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--bd)}
+.nav-logo img{height:44px;width:auto;object-fit:contain;display:block}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{font-size:14px;font-weight:600;color:var(--mt);text-decoration:none;padding:8px 14px;border-radius:9px;transition:all .2s}
+.nav-link:hover{color:var(--ink);background:rgba(11,29,46,.05)}
+.nav-cta{background:var(--g);color:#fff;padding:11px 22px;border-radius:11px;font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:14.5px;text-decoration:none;box-shadow:0 6px 18px var(--gl);transition:all .2s;border:none;cursor:pointer}
+.nav-cta:hover{background:var(--gd);transform:translateY(-1px)}
+
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;color:var(--ink)}
+.badge{display:inline-flex;align-items:center;gap:8px;background:var(--gp);border:1px solid rgba(0,194,124,.25);color:var(--gd);padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;margin-bottom:24px}
+.bdot{width:7px;height:7px;background:var(--g);border-radius:50%}
+.bp{background:var(--g);color:#fff;padding:16px 30px;border-radius:13px;font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:15.5px;text-decoration:none;border:none;cursor:pointer;box-shadow:0 8px 24px var(--gl);transition:all .25s;display:inline-flex;align-items:center;gap:8px}
+.bp:hover{background:var(--gd);transform:translateY(-2px)}
+.bg{background:#fff;color:var(--ink);padding:16px 26px;border-radius:13px;font-family:"Bricolage Grotesque",sans-serif;font-weight:600;font-size:15.5px;text-decoration:none;border:1.5px solid var(--bd);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.bg:hover{border-color:var(--g);color:var(--gd);background:var(--gp)}
+.eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--gd);margin-bottom:14px}
+.sh2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(28px,4vw,46px);color:var(--ink);letter-spacing:-1px;line-height:1.1;margin-bottom:14px}
+.ssub{font-size:16px;color:var(--mt);max-width:620px;line-height:1.75}
+
+/* ─── subpage layout ─── */
+.crumb{max-width:1060px;margin:0 auto;padding:118px 36px 0;font-size:13px;color:var(--mt)}
+.crumb a{color:var(--mt);text-decoration:none}
+.crumb a:hover{color:var(--gd)}
+.pg-hero{padding:28px 36px 70px;position:relative;overflow:hidden}
+.pg-hero-i{max-width:1060px;margin:0 auto;position:relative}
+.pg-hero h1{font-weight:800;font-size:clamp(32px,4.6vw,54px);letter-spacing:-1.5px;line-height:1.06;margin-bottom:20px;max-width:760px}
+.pg-hero h1 em{font-family:"DM Serif Display",serif;font-style:italic;color:var(--g);font-weight:400}
+.pg-hero p.lead{font-size:18px;color:var(--mt);line-height:1.75;max-width:600px;margin-bottom:32px}
+.pg-hero .hbtns{display:flex;flex-wrap:wrap;gap:12px}
+.hb{position:absolute;border-radius:50%;pointer-events:none}
+.hb1{width:640px;height:640px;top:-260px;right:-190px;background:radial-gradient(circle,rgba(0,194,124,.09) 0%,transparent 65%)}
+
+.content-sec{padding:70px 36px;max-width:1060px;margin:0 auto}
+.content-sec + .content-sec{border-top:1px solid var(--bd)}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:36px}
+.feat-card{background:#fff;border:1px solid var(--bd);border-radius:18px;padding:26px;box-shadow:var(--sh)}
+.feat-card .ic{width:44px;height:44px;background:var(--gp);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
+.feat-card h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.feat-card p{font-size:14px;color:var(--mt);line-height:1.6}
+.check-list{list-style:none;margin-top:20px}
+.check-list li{display:flex;align-items:flex-start;gap:10px;font-size:15px;color:var(--mt);margin-bottom:12px}
+.check-list li::before{content:"✓";color:var(--gd);font-weight:800;flex-shrink:0}
+
+.cta-band{background:var(--s);padding:70px 36px;text-align:center}
+.cta-band h2{color:#fff;font-size:clamp(26px,3.4vw,38px);font-weight:800;letter-spacing:-1px;margin-bottom:14px}
+.cta-band p{color:rgba(255,255,255,.6);margin-bottom:30px;max-width:520px;margin-left:auto;margin-right:auto}
+
+.lform{max-width:460px;margin:0 auto;background:#fff;border:1px solid var(--bd);border-radius:18px;padding:26px;box-shadow:var(--shx);text-align:left}
+.lform input{width:100%;padding:13px 14px;border:1.5px solid var(--bd);border-radius:10px;font-size:14.5px;font-family:inherit;margin-bottom:12px;color:var(--ink)}
+.lform input:focus{outline:none;border-color:var(--g)}
+.lform button{width:100%}
+.lform .ok{color:var(--gd);font-weight:700;font-size:14.5px;text-align:center;display:none}
+.lform .ok.show{display:block}
+
+footer{background:var(--s);padding:54px 36px 36px;border-top:1px solid rgba(255,255,255,.04)}
+.fti{max-width:1060px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;justify-content:space-between;align-items:flex-start}
+.ftlogo img{height:36px;width:auto;object-fit:contain;filter:brightness(0) invert(1);opacity:.85;margin-bottom:12px}
+.fttag{font-size:13px;color:rgba(255,255,255,.42);margin-bottom:18px;font-style:italic}
+.ftpl{font-size:13.5px;color:var(--g2);text-decoration:none;border-bottom:1px solid rgba(0,194,124,.3);padding-bottom:1px}
+.ftcol h4{font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:14px}
+.ftcol a{display:block;font-size:13.5px;color:rgba(255,255,255,.5);text-decoration:none;margin-bottom:9px;transition:color .2s}
+.ftcol a:hover{color:var(--g2)}
+.ftbot{max-width:1060px;margin:36px auto 0;padding-top:22px;border-top:1px solid rgba(255,255,255,.05);display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center}
+.ftcpy,.ftmade{font-size:12px;color:rgba(255,255,255,.3)}
+
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:13px 22px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:all .3s;z-index:2000;box-shadow:var(--shx)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:880px){.feat-grid{grid-template-columns:1fr}}
+@media(max-width:580px){
+  #mainNav{padding:0 16px}.nav-links{display:none}
+  .crumb,.pg-hero,.content-sec,.cta-band{padding-left:16px;padding-right:16px}
+  .pg-hero{padding-top:28px}
+}
