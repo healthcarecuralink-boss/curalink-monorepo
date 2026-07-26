@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // Serves a built dist/ the way Netlify will, so a production build can be
 // checked locally before it goes to a real domain. The Expo dev server does
-// not exercise any of this: baseUrl rewriting, the SPA fallback for /app/*,
-// and the marketing page sitting at / are all deploy-time concerns.
+// not exercise any of this: the SPA fallback for the app's client-side
+// routes (/auth, /login, /(tabs)/home, ...) and the static subpages sitting
+// alongside the app at the root are all deploy-time concerns.
 //
 //   node scripts/serve-dist.mjs apps/curalink 4173
 //
-// Deliberately minimal -- it implements the two rules in web/_redirects and
-// nothing else. It is a verification aid, not a production server.
+// Deliberately minimal -- it implements the one rule in web/_redirects
+// (unmatched paths fall back to the root index.html) and nothing else. It is
+// a verification aid, not a production server.
 
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
@@ -46,13 +48,12 @@ function resolveFile(urlPath) {
   }
   if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
 
-  // The SPA fallback from web/_redirects: any unmatched path under /app is a
-  // client-side route, so hand back the app shell with a 200. Real files were
-  // already matched above, exactly as Netlify orders it.
-  if (rel === "/app" || rel.startsWith("/app/")) {
-    const shell = join(root, "app", "index.html");
-    if (existsSync(shell)) return shell;
-  }
+  // The SPA fallback from web/_redirects: any unmatched path is one of the
+  // app's own client-side routes (/auth, /login, /(tabs)/home, ...), so hand
+  // back the root shell with a 200. Real files (static subpages, the JS
+  // bundle, icons) were already matched above, exactly as Netlify orders it.
+  const shell = join(root, "index.html");
+  if (existsSync(shell)) return shell;
   return null;
 }
 
@@ -69,6 +70,5 @@ createServer((req, res) => {
   createReadStream(file).pipe(res);
 }).listen(port, () => {
   console.log(`Serving ${root}`);
-  console.log(`  site  http://localhost:${port}/`);
-  console.log(`  app   http://localhost:${port}/app`);
+  console.log(`  http://localhost:${port}/`);
 });

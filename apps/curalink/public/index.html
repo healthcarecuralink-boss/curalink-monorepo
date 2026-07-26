@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
-  Web shell for the CuraLink app at curalink.co.in/app.
+  Web shell for the CuraLink app at curalink.co.in -- this is the real
+  product's root now, not a secondary path behind a marketing page.
 
   With `web.output: "single"` in app.json, Expo builds the exported index.html
   from this file (public/index.html) and appends the bundle <script> itself.
@@ -11,6 +12,18 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script>
+      // The desktop "phone in a frame" treatment below only makes sense for
+      // the actual phone-width app screens (post-sign-in). index.web.tsx --
+      // the logged-out welcome screen at / -- is a full desktop-width
+      // marketing page and must not be squeezed into a 460px column. Netlify
+      // serves this same file for every route (see web/_redirects) without
+      // rewriting the URL, so location.pathname still reflects the real
+      // requested route even before the app's own router has mounted.
+      if (window.location.pathname === "/" || window.location.pathname === "") {
+        document.documentElement.classList.add("web-welcome");
+      }
+    </script>
     <!-- viewport-fit=cover + the safe-area padding below keep the layout clear
          of the notch and home indicator once installed on iOS. -->
     <meta
@@ -18,35 +31,62 @@
       content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
     />
 
-    <title>CuraLink — Book care for your family, right at home</title>
+    <title>Curalink — Rapid Home Healthcare, India</title>
     <meta
       name="description"
-      content="CuraLink brings nurses, doctors, physiotherapists, lab tests and ambulances to your door. Book trusted home healthcare across India in minutes."
+      content="Curalink brings licensed, background-checked healthcare professionals to your door — and gives every family a calm, organized health dashboard. Care. Comfort. Connected."
     />
+    <link rel="canonical" href="https://curalink.co.in/" />
 
-    <meta property="og:title" content="CuraLink — Home healthcare, on demand" />
+    <meta property="og:site_name" content="Curalink" />
+    <meta property="og:title" content="Curalink — Rapid Home Healthcare, India" />
     <meta
       property="og:description"
-      content="Book nurses, doctors, lab tests and ambulances to your door. Trusted home healthcare across India."
+      content="Licensed, background-checked healthcare professionals at your door in minutes. Book nurses, doctors, lab tests and ambulances across India."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://curalink.co.in/app" />
-    <meta property="og:image" content="https://curalink.co.in/app/og-image.png" />
+    <meta property="og:url" content="https://curalink.co.in/" />
+    <meta property="og:image" content="https://curalink.co.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_IN" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://curalink.co.in/app/og-image.png" />
+    <meta name="twitter:title" content="Curalink — Rapid Home Healthcare, India" />
+    <meta name="twitter:image" content="https://curalink.co.in/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "MedicalBusiness",
+        "name": "Curalink",
+        "url": "https://curalink.co.in/",
+        "logo": "https://curalink.co.in/og-image.png",
+        "image": "https://curalink.co.in/og-image.png",
+        "description": "Curalink brings licensed, background-checked healthcare professionals to your door across India — nurses, doctors, lab tests, IV therapy, physiotherapy, elder care and more.",
+        "areaServed": { "@type": "City", "name": "Hyderabad" },
+        "address": { "@type": "PostalAddress", "addressLocality": "Hyderabad", "addressRegion": "Telangana", "addressCountry": "IN" },
+        "email": "healthcarecuralink@gmail.com"
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "WebSite", "name": "Curalink", "url": "https://curalink.co.in/" }
+    </script>
 
     <!-- Installable-PWA bits, so "Add to Home Screen" gives the same
          standalone, chrome-less feel as the native app. -->
-    <link rel="manifest" href="/app/manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="CuraLink" />
-    <link rel="apple-touch-icon" href="/app/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <meta name="theme-color" content="#00C27C" />
 
-    <!-- Login-gated and client-rendered; the marketing site at / is what
-         should rank. -->
-    <meta name="robots" content="noindex, nofollow" />
+    <!-- This IS the real product now (the logged-out welcome screen lives at
+         index.web.tsx) -- it should rank. Screens behind /auth are
+         client-rendered and login-gated, so there's little for a crawler to
+         index past this shell regardless. -->
+    <meta name="robots" content="index, follow" />
 
     <style id="expo-reset">
       /* react-native-web's recommended reset: full-height document, and body
@@ -81,7 +121,7 @@
          centred, device-sized surface on a branded backdrop, which reads as
          deliberate. Actual phones stay untouched. */
       @media (min-width: 768px) {
-        body {
+        html:not(.web-welcome) body {
           background-color: #0b1d2e;
           background-image: radial-gradient(
             ellipse at 50% 0%,
@@ -92,7 +132,7 @@
           align-items: center;
           justify-content: center;
         }
-        #root {
+        html:not(.web-welcome) #root {
           width: 460px;
           max-width: 100%;
           height: min(940px, 100vh);
@@ -115,8 +155,8 @@
 
   <body>
     <noscript>
-      CuraLink needs JavaScript to run. Please enable it, or visit
-      <a href="/">curalink.co.in</a> to learn more and request early access.
+      CuraLink needs JavaScript to run. Please enable it to continue, or email
+      <a href="mailto:healthcarecuralink@gmail.com">healthcarecuralink@gmail.com</a>.
     </noscript>
     <div id="root"></div>
   </body>

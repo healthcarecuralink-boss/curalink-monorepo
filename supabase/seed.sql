@@ -302,10 +302,14 @@ update public.professional_profiles set rating = 4.9, rating_count = 980 where p
 update public.professional_profiles set rating = 4.7, rating_count = 505 where profile_id = '00000000-0000-0000-0001-000000000017'; -- Sanjeevani Ambulance Fleet
 
 -- -----------------------------------------------------------------------
--- 16. Dev-only login bypass: unlike the identities in section 1, this one
---     has a real, known password so curalink-plus's __DEV__-gated "Skip
---     OTP, sign in as test nurse" button (login.tsx) can sign straight in
+-- 16. Dev-only login bypass: unlike the identities in section 1, these have
+--     a real, known password so curalink-plus's __DEV__-gated "Skip OTP,
+--     sign in as" panel (login.tsx's DEV_TEST_ACCOUNTS) can sign straight in
 --     -- for QA when MSG91 OTP delivery isn't available/working.
+--     Previously only the nurse account (...0001) was actually seeded here,
+--     even though DEV_TEST_ACCOUNTS lists all six roles -- the other five
+--     buttons in the dev panel would fail with "no such user". Filling in
+--     the remaining five so every button in that panel actually works.
 -- -----------------------------------------------------------------------
 insert into auth.users (
   instance_id, id, aud, role, phone, encrypted_password,
@@ -313,15 +317,51 @@ insert into auth.users (
   email_change_token_new, email_change,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 )
-values (
-  '00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000001', 'authenticated', 'authenticated',
-  '911234500000', crypt('TestNurse@123', gen_salt('bf')), now(), '', '', '', '',
-  '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Nurse"}', now(), now()
-)
+values
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000001', 'authenticated', 'authenticated',
+   '911234500000', crypt('TestNurse@123', gen_salt('bf')), now(), '', '', '', '',
+   '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Nurse"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000002', 'authenticated', 'authenticated',
+   '911234500001', crypt('TestDoctor@123', gen_salt('bf')), now(), '', '', '', '',
+   '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Doctor"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000003', 'authenticated', 'authenticated',
+   '911234500002', crypt('TestVet@123', gen_salt('bf')), now(), '', '', '', '',
+   '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Vet"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000004', 'authenticated', 'authenticated',
+   '911234500003', crypt('TestAdmin@123', gen_salt('bf')), now(), '', '', '', '',
+   '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Admin"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000005', 'authenticated', 'authenticated',
+   '911234500004', crypt('TestPharmacy@123', gen_salt('bf')), now(), '', '', '', '',
+   '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Pharmacy"}', now(), now()),
+  ('00000000-0000-0000-0000-000000000000', 'dddddddd-0000-0000-0000-000000000006', 'authenticated', 'authenticated',
+   '911234500005', crypt('TestAmbulance@123', gen_salt('bf')), now(), '', '', '', '',
+   '{"provider":"phone","providers":["phone"]}', '{"full_name":"Test Ambulance"}', now(), now())
 on conflict (id) do nothing;
 
 update public.profiles set roles = array['nurse'] where id = 'dddddddd-0000-0000-0000-000000000001';
-update public.professional_credentials set verification_status = 'approved', docs = '[{"type":"id_proof","status":"approved"}]'::jsonb where profile_id = 'dddddddd-0000-0000-0000-000000000001';
+update public.profiles set roles = array['doctor'] where id = 'dddddddd-0000-0000-0000-000000000002';
+update public.profiles set roles = array['vet'] where id = 'dddddddd-0000-0000-0000-000000000003';
+update public.profiles set roles = array['admin'] where id = 'dddddddd-0000-0000-0000-000000000004';
+update public.profiles set roles = array['pharmacy'] where id = 'dddddddd-0000-0000-0000-000000000005';
+update public.profiles set roles = array['ambulance'] where id = 'dddddddd-0000-0000-0000-000000000006';
+
+update public.professional_credentials set verification_status = 'approved', docs = '[{"type":"id_proof","status":"approved"}]'::jsonb where profile_id in (
+  'dddddddd-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000002', 'dddddddd-0000-0000-0000-000000000003',
+  'dddddddd-0000-0000-0000-000000000004', 'dddddddd-0000-0000-0000-000000000005', 'dddddddd-0000-0000-0000-000000000006'
+);
+
 update public.professional_profiles set bio = 'Dummy test nurse account for QA', years_experience = 5, is_on_duty = true, service_area = 'Kondapur', lat = 17.4615, lng = 78.3556 where profile_id = 'dddddddd-0000-0000-0000-000000000001';
+update public.professional_profiles set bio = 'Dummy test doctor account for QA', years_experience = 8, is_on_duty = true, service_area = 'Jubilee Hills', lat = 17.4326, lng = 78.4071 where profile_id = 'dddddddd-0000-0000-0000-000000000002';
+update public.professional_profiles set bio = 'Dummy test vet account for QA', years_experience = 4, is_on_duty = true, service_area = 'Madhapur', lat = 17.4483, lng = 78.3915 where profile_id = 'dddddddd-0000-0000-0000-000000000003';
+update public.professional_profiles set bio = 'Dummy test admin account for QA', is_on_duty = true, service_area = 'Hyderabad Central' where profile_id = 'dddddddd-0000-0000-0000-000000000004';
+update public.professional_profiles set bio = 'Dummy test pharmacy account for QA', is_on_duty = true, service_area = 'Kondapur', lat = 17.4615, lng = 78.3556 where profile_id = 'dddddddd-0000-0000-0000-000000000005';
+update public.professional_profiles set bio = 'Dummy test ambulance account for QA', is_on_duty = true, service_area = 'Banjara Hills', lat = 17.4156, lng = 78.4347 where profile_id = 'dddddddd-0000-0000-0000-000000000006';
+
+-- Test Admin needs a team to administer -- the dispatch/team-roster screens
+-- (and the test_invite_flow.sql migration, which already assumed this admin
+-- had a team) are otherwise empty for this account.
+insert into public.teams (id, admin_id, name) values
+  ('dddddddd-0000-0000-0001-000000000001', 'dddddddd-0000-0000-0000-000000000004', 'QA Test Team')
+on conflict (id) do nothing;
 
 commit;

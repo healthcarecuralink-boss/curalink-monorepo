@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
-  Web shell for the CuraLink Plus partner app at curalinkplus.co.in/app.
+  Web shell for the CuraLink Plus partner app at curalinkplus.co.in -- this
+  is the real product's root now, not a secondary path behind a marketing page.
 
   With `web.output: "single"` in app.json, Expo builds the exported index.html
   from this file (public/index.html) and appends the bundle <script> itself.
@@ -11,39 +12,81 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script>
+      // The desktop "phone in a frame" treatment below only makes sense for
+      // the actual phone-width app screens (post-sign-in). index.web.tsx --
+      // the logged-out welcome screen at / -- is a full desktop-width
+      // marketing page and must not be squeezed into a 520px column. Netlify
+      // serves this same file for every route (see web/_redirects) without
+      // rewriting the URL, so location.pathname still reflects the real
+      // requested route even before the app's own router has mounted.
+      if (window.location.pathname === "/" || window.location.pathname === "") {
+        document.documentElement.classList.add("web-welcome");
+      }
+    </script>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no, viewport-fit=cover"
     />
 
-    <title>CuraLink Plus — Partner portal</title>
+    <title>CuralinkPlus — Home Healthcare Operations Platform for Partners</title>
     <meta
       name="description"
-      content="CuraLink Plus is the partner portal for nurses, doctors, veterinarians, pharmacies and ambulance operators. Manage jobs, schedules, teams and earnings."
+      content="CuralinkPlus is the free operations platform for medical partners, doctors, nurses and vet care teams — live dispatch, staff scheduling, patient management, billing and analytics in one dashboard."
     />
+    <link rel="canonical" href="https://curalinkplus.co.in/" />
 
-    <meta property="og:title" content="CuraLink Plus — Partner portal" />
+    <meta property="og:site_name" content="CuralinkPlus" />
+    <meta property="og:title" content="CuralinkPlus — Home Healthcare Operations Platform for Partners" />
     <meta
       property="og:description"
-      content="Manage jobs, schedules, teams and earnings on the CuraLink partner network."
+      content="Free for medical partners, doctors, nurses and vet care teams — live dispatch, staff scheduling, patient management, billing and analytics in one calm dashboard."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://curalinkplus.co.in/app" />
-    <meta property="og:image" content="https://curalinkplus.co.in/app/og-image.png" />
+    <meta property="og:url" content="https://curalinkplus.co.in/" />
+    <meta property="og:image" content="https://curalinkplus.co.in/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_IN" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://curalinkplus.co.in/app/og-image.png" />
+    <meta name="twitter:title" content="CuralinkPlus — Home Healthcare Operations Platform for Partners" />
+    <meta name="twitter:image" content="https://curalinkplus.co.in/og-image.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "CuralinkPlus",
+        "url": "https://curalinkplus.co.in/",
+        "logo": "https://curalinkplus.co.in/og-image.png",
+        "image": "https://curalinkplus.co.in/og-image.png",
+        "description": "CuralinkPlus is the free operations platform for medical partners, doctors, nurses and vet care teams to manage dispatch, staffing, patients, billing and analytics.",
+        "areaServed": { "@type": "City", "name": "Hyderabad" },
+        "address": { "@type": "PostalAddress", "addressLocality": "Hyderabad", "addressRegion": "Telangana", "addressCountry": "IN" },
+        "email": "healthcarecuralink@gmail.com",
+        "sameAs": ["https://curalink.co.in/"]
+      }
+    </script>
+    <script type="application/ld+json">
+      { "@context": "https://schema.org", "@type": "WebSite", "name": "CuralinkPlus", "url": "https://curalinkplus.co.in/" }
+    </script>
 
     <!-- Partners work a whole shift in here -- installing it standalone drops
          the browser chrome and matches the native app. -->
-    <link rel="manifest" href="/app/manifest.json" />
+    <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="CuraLink Plus" />
-    <link rel="apple-touch-icon" href="/app/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <meta name="theme-color" content="#0f7a5e" />
 
-    <!-- Staff tool, not a marketing surface. -->
-    <meta name="robots" content="noindex, nofollow" />
+    <!-- This IS the real product now (the logged-out welcome screen lives at
+         index.web.tsx) -- it should rank, same as the /for-nurses etc.
+         subpages. Screens behind /login are client-rendered and
+         login-gated, so there's little for a crawler to index past this
+         shell regardless. -->
+    <meta name="robots" content="index, follow" />
 
     <style id="expo-reset">
       /* react-native-web's recommended reset: full-height document, and body
@@ -75,7 +118,7 @@
          frame: partners live in the dispatch/queue/analytics screens, and those
          are the ones most starved for horizontal room. */
       @media (min-width: 768px) {
-        body {
+        html:not(.web-welcome) body {
           background-color: #0a1628;
           background-image: radial-gradient(
             ellipse at 50% 0%,
@@ -86,7 +129,7 @@
           align-items: center;
           justify-content: center;
         }
-        #root {
+        html:not(.web-welcome) #root {
           width: 520px;
           max-width: 100%;
           height: min(940px, 100vh);
@@ -109,8 +152,8 @@
 
   <body>
     <noscript>
-      CuraLink Plus needs JavaScript to run. Please enable it, or visit
-      <a href="/">curalinkplus.co.in</a> to learn about the partner network.
+      CuraLink Plus needs JavaScript to run. Please enable it to continue, or
+      email <a href="mailto:healthcarecuralink@gmail.com">healthcarecuralink@gmail.com</a>.
     </noscript>
     <div id="root"></div>
   </body>

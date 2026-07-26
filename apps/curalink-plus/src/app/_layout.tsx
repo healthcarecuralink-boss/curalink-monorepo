@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { router, Stack } from "expo-router";
+import { Platform } from "react-native";
+import { router, Stack, usePathname } from "expo-router";
 import * as Linking from "expo-linking";
 import { wrapRootLayout } from "../utils/sentry";
 import * as Notifications from "expo-notifications";
@@ -32,6 +33,24 @@ function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
   const session = useSessionStore((s) => s.session);
   const isLoading = useSessionStore((s) => s.isLoading);
+
+  // public/index.html's inline script sets `web-welcome` on <html> once, at
+  // first paint, from the initial URL -- it turns off the desktop "phone in
+  // a frame" treatment for index.web.tsx (the logged-out welcome screen at
+  // /, a full-width marketing page). That one-time check doesn't fire again
+  // on a client-side navigation (router.push, no full reload), so without
+  // this effect, navigating away from / (e.g. tapping "Sign in") would leave
+  // the class stuck and /login would render un-framed. This keeps it in
+  // sync with the actual current route on every navigation, web only.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    // No DOM lib in this project's tsconfig (native-first RN project), so
+    // `document` isn't a known global to TypeScript -- it exists at runtime
+    // on web regardless. `any` sidesteps that without pulling in DOM types.
+    const doc = (globalThis as any).document;
+    doc?.documentElement.classList.toggle("web-welcome", pathname === "/");
+  }, [pathname]);
 
   // Root-level, so it fires no matter which screen is on top when sign-out
   // happens (settings.tsx, profile.tsx, ...) -- without this, the session

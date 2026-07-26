@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 // Assembles the Netlify publish directory for curalinkplus.co.in.
 //
-// Two things ship from one deploy:
-//   dist/          -- the marketing site (web/), served at /
-//   dist/app/      -- the Expo web bundle, served at /app
-//
-// They are built separately because only the app half goes through Metro. The
-// marketing page is hand-written HTML that we copy verbatim; running it through
-// a bundler would gain nothing and risk mangling its inlined base64 assets.
+// The domain is the real CuraLink Plus app (Expo web export) at the root,
+// plus a handful of static SEO subpages (for-nurses, for-doctors, ...) and
+// Netlify config copied on top from web/. There is no separate marketing
+// shell anymore -- index.web.tsx (see src/app/) IS the logged-out welcome
+// screen, replacing the old hand-written web/index.html.
 
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
@@ -24,32 +22,29 @@ const siteSrc = join(appRoot, "web");
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
-// `expo export` writes the app straight into its /app subdirectory. The
-// matching `experiments.baseUrl` in app.json is what makes the emitted asset
-// URLs absolute against /app -- the two must stay in sync or the shell will
-// request its bundle from the domain root and 404.
-console.log("→ exporting Expo web bundle to dist/app");
-execFileSync("npx", ["expo", "export", "--platform", "web", "--output-dir", "dist/app"], {
+console.log("→ exporting Expo web bundle to dist/");
+execFileSync("npx", ["expo", "export", "--platform", "web", "--output-dir", "dist"], {
   cwd: appRoot,
   stdio: "inherit",
 });
 
-if (!existsSync(join(dist, "app", "index.html"))) {
-  throw new Error("expo export finished but dist/app/index.html is missing -- aborting rather than publishing a broken site");
+if (!existsSync(join(dist, "index.html"))) {
+  throw new Error("expo export finished but dist/index.html is missing -- aborting rather than publishing a broken site");
 }
 
-// The marketing site and the Netlify control files (_redirects, _headers,
-// robots.txt) sit at the publish root, so they land on top of dist/ rather
-// than inside dist/app.
-console.log("→ copying marketing site + Netlify config to dist/");
+// The static SEO subpages and Netlify control files (_redirects, _headers,
+// robots.txt, sitemap.xml) sit at the publish root alongside the exported
+// app -- Netlify serves these real files first, only falling through to the
+// SPA shell for the app's own client-side routes (see _redirects).
+console.log("→ copying static subpages + Netlify config to dist/");
 for (const entry of readdirSync(siteSrc)) {
   cpSync(join(siteSrc, entry), join(dist, entry), { recursive: true });
 }
 
-for (const required of ["index.html", "_redirects", "_headers"]) {
+for (const required of ["_redirects", "_headers"]) {
   if (!existsSync(join(dist, required))) {
     throw new Error(`dist/${required} is missing -- check apps/curalink-plus/web/`);
   }
 }
 
-console.log("✓ dist/ ready to publish (site at /, app at /app)");
+console.log("✓ dist/ ready to publish (the real app at /, static subpages alongside it)");

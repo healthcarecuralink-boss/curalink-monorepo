@@ -127,12 +127,23 @@ export default function OtpScreen() {
       }
 
       if (!user) {
-        router.replace("/welcome");
+        // Verification reported success but no session materialized -- an
+        // edge case, not the expected path. "/welcome" was never a real
+        // route in this app; send back to the entry point to retry.
+        router.replace("/login");
         return;
       }
 
       const { data: profileRow } = await supabase.from("profiles").select("roles").eq("id", user.id).single();
       if (role && profileRow?.roles?.includes(role)) {
+        router.replace("/(tabs)/home");
+        return;
+      }
+      if (!role && profileRow?.roles && profileRow.roles.length > 0) {
+        // Plain sign-in (no role param -- see login.tsx's isApplying comment)
+        // on an account that already has at least one approved role: a
+        // returning partner, not a new applicant. Send them to their
+        // dashboard rather than falling through to onboarding below.
         router.replace("/(tabs)/home");
         return;
       }
@@ -142,14 +153,26 @@ export default function OtpScreen() {
         router.replace("/verification-pending");
         return;
       }
+      if (!role && credentials?.pending_roles && credentials.pending_roles.length > 0) {
+        // Plain sign-in, application already submitted for some role and
+        // still awaiting review.
+        router.replace("/verification-pending");
+        return;
+      }
 
       // First-time applicant: record interest now so professional_credentials
       // exists for the rest of onboarding to progressively save into (the
       // role itself isn't granted until an admin calls approve_role).
       if (role) {
         await requestRole(role);
+        router.replace({ pathname: "/professional-details-1", params: { role } });
+        return;
       }
-      router.replace({ pathname: "/professional-details-1", params: { role } });
+      // Plain sign-in with no role, no approved role, and no pending
+      // application -- nothing on this account to route into. Send back to
+      // the role picker so they can actually apply, instead of onto
+      // professional-details-1 with an undefined role.
+      router.replace("/signup");
     } catch (err) {
       setError(getErrorMessage(err));
       setCode("");

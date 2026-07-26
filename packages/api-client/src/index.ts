@@ -83,6 +83,7 @@ export {
   updateProfessionalProfile,
   fetchProfessionalCredentials,
   updateProfessionalCredentials,
+  uploadProfessionalDocument,
   setOnDuty,
   fetchActiveJob,
   fetchAvailableJobs,

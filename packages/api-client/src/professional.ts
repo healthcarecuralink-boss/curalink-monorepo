@@ -51,6 +51,33 @@ export async function updateProfessionalCredentials(
   if (error) throw error;
 }
 
+// Uploads one onboarding document (license, ID proof, background check,
+// address proof) to the professional-documents bucket and returns the
+// storage path to save into professional_credentials.docs. `fetch(uri)` on
+// an Expo-picked file (expo-document-picker) returns a real Blob on both web
+// and native -- no expo-file-system/base64 bridging needed. Path is scoped
+// under the uploader's own id (see the bucket's RLS policies).
+export async function uploadProfessionalDocument(
+  profileId: string,
+  docType: string,
+  file: { uri: string; name: string; mimeType?: string | null },
+): Promise<string> {
+  const response = await fetch(file.uri);
+  const blob = await response.blob();
+  const extMatch = /\.([a-zA-Z0-9]+)$/.exec(file.name);
+  const ext = extMatch?.[1]?.toLowerCase() ?? "bin";
+  const path = `${profileId}/${docType}-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("professional-documents")
+    .upload(path, blob, {
+      contentType: file.mimeType ?? blob.type ?? "application/octet-stream",
+      upsert: false,
+    });
+  if (error) throw error;
+  return path;
+}
+
 export async function setOnDuty(profileId: string, isOnDuty: boolean): Promise<void> {
   const { error } = await supabase
     .from("professional_profiles")

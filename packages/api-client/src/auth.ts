@@ -1,3 +1,4 @@
+import { Platform } from "react-native";
 import * as Linking from "expo-linking";
 import { supabase } from "./supabaseClient";
 import type { Profile } from "./types";
@@ -154,12 +155,6 @@ export async function signOut() {
 // device. This function's only remaining job is opening the browser and
 // detecting an explicit user cancel.
 export async function signInWithGoogle(): Promise<void> {
-  // Imported lazily -- expo-web-browser is only needed for this one Google
-  // sign-in flow (curalink app), but this whole file is loaded eagerly by
-  // every app that imports @curalink/api-client. A top-level import here
-  // crashed curalink-plus at boot, which never links this native module
-  // since it doesn't offer Google sign-in.
-  const WebBrowser = await import("expo-web-browser");
   const redirectTo = Linking.createURL("auth-callback");
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -168,6 +163,26 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw error;
   if (!data.url) throw new Error("Couldn't start Google sign-in.");
 
+  if (Platform.OS === "web") {
+    // WebBrowser.openAuthSessionAsync falls back to window.open() on web,
+    // which browsers -- Safari especially -- block once it's called after
+    // an async gap (the signInWithOAuth round-trip above): it's no longer
+    // considered a direct result of the click that triggered it. A full-page
+    // redirect has no such restriction. Google sends the browser back to
+    // redirectTo afterward, landing on a fresh page load; the root layout's
+    // Linking listener (via Linking.getInitialURL()) picks the session up
+    // from that URL the same way it already handles a native deep link.
+    // No DOM lib in this package's tsconfig (native-first), hence the cast.
+    (globalThis as any).window?.location.assign(data.url);
+    return;
+  }
+
+  // Imported lazily -- expo-web-browser is only needed for this one Google
+  // sign-in flow (curalink app), but this whole file is loaded eagerly by
+  // every app that imports @curalink/api-client. A top-level import here
+  // crashed curalink-plus at boot, which never links this native module
+  // since it doesn't offer Google sign-in.
+  const WebBrowser = await import("expo-web-browser");
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== "success" && result.type !== "dismiss") {
     throw new Error("Google sign-in was cancelled.");

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { router } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import { Check, HeartPulse } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getErrorMessage, sendEmailOtp, sendPhoneOtp, signInWithGoogle, useSessionStore } from "@curalink/api-client";
@@ -10,11 +10,14 @@ import { Button, TextField, curalinkFonts, useTheme } from "@curalink/ui";
 // (verification approved + edge functions deployed + template secret set).
 const PHONE_OTP_ENABLED = false;
 
-// Single entry point (replaces the old welcome -> login -> signup split):
-// one phone number can only ever be one account, so there's nothing to
-// disambiguate up front -- Google is one tap, and the phone path below
-// works the same whether the number is new or returning (the backend
-// decides that, see verify-whatsapp-otp).
+// One screen, two modes off the `mode` param -- mirrors CuraLink Plus's
+// login.tsx (`role` param toggles its isApplying). Google/phone/email is
+// still a single continue-flow either way (one phone number or email can
+// only ever be one account, so the backend -- not this screen -- decides
+// new vs returning, see verify-whatsapp-otp) -- but a *returning* user
+// shouldn't have to re-enter their name, a referral code, or re-accept
+// consent every time they sign in, so isLogin hides those signup-only
+// fields and skips their validation.
 export default function AuthScreen() {
   const { colors } = useTheme();
   const styles = useMemo(
@@ -113,10 +116,22 @@ export default function AuthScreen() {
           color: colors.primary,
           fontWeight: "700",
         },
+        footerLink: {
+          marginTop: 22,
+          alignSelf: "center",
+          fontSize: 13,
+          color: colors.muted,
+        },
+        footerLinkAccent: {
+          color: colors.primary,
+          fontWeight: "700",
+        },
       }),
     [colors],
   );
 
+  const { mode } = useLocalSearchParams<{ mode?: "login" }>();
+  const isLogin = mode === "login";
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -127,12 +142,15 @@ export default function AuthScreen() {
   const [isEmailSubmitting, setIsEmailSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function requireConsent(): boolean {
+    if (isLogin || consentGiven) return true;
+    setError("Please accept the Terms of Service and Privacy Policy to continue.");
+    return false;
+  }
+
   async function handleGoogle() {
     setError(null);
-    if (!consentGiven) {
-      setError("Please accept the Terms of Service and Privacy Policy to continue.");
-      return;
-    }
+    if (!requireConsent()) return;
     setIsGoogleSubmitting(true);
     useSessionStore.getState().setAuthError(null);
     try {
@@ -152,11 +170,8 @@ export default function AuthScreen() {
 
   async function handlePhoneContinue() {
     setError(null);
-    if (!consentGiven) {
-      setError("Please accept the Terms of Service and Privacy Policy to continue.");
-      return;
-    }
-    if (!name.trim()) {
+    if (!requireConsent()) return;
+    if (!isLogin && !name.trim()) {
       setError("Enter your full name.");
       return;
     }
@@ -171,9 +186,9 @@ export default function AuthScreen() {
         pathname: "/otp",
         params: {
           phone,
-          name: name.trim(),
+          name: name.trim() || undefined,
           referralCode: referralCode.trim() || undefined,
-          consent: "1",
+          consent: isLogin ? undefined : "1",
         },
       });
     } catch (err) {
@@ -187,11 +202,8 @@ export default function AuthScreen() {
   // Business Verification. Same downstream flow; the code just arrives by email.
   async function handleEmailContinue() {
     setError(null);
-    if (!consentGiven) {
-      setError("Please accept the Terms of Service and Privacy Policy to continue.");
-      return;
-    }
-    if (!name.trim()) {
+    if (!requireConsent()) return;
+    if (!isLogin && !name.trim()) {
       setError("Enter your full name.");
       return;
     }
@@ -201,15 +213,15 @@ export default function AuthScreen() {
     }
     setIsEmailSubmitting(true);
     try {
-      await sendEmailOtp(email, name);
+      await sendEmailOtp(email, name.trim() || undefined);
       router.push({
         pathname: "/otp",
         params: {
           email: email.trim(),
           channel: "email",
-          name: name.trim(),
+          name: name.trim() || undefined,
           referralCode: referralCode.trim() || undefined,
-          consent: "1",
+          consent: isLogin ? undefined : "1",
         },
       });
     } catch (err) {
@@ -224,8 +236,10 @@ export default function AuthScreen() {
       <View style={styles.iconChip}>
         <HeartPulse size={28} color="#FFFFFF" strokeWidth={2} />
       </View>
-      <Text style={styles.title}>Welcome to CuraLink</Text>
-      <Text style={styles.subtitle}>Book care for your family, right at home.</Text>
+      <Text style={styles.title}>{isLogin ? "Welcome back" : "Welcome to CuraLink"}</Text>
+      <Text style={styles.subtitle}>
+        {isLogin ? "Sign in to book care for your family." : "Book care for your family, right at home."}
+      </Text>
 
       <Button
         label={isGoogleSubmitting ? "Connecting..." : "Continue with Google"}
@@ -247,7 +261,7 @@ export default function AuthScreen() {
       </View>
 
       <View style={styles.form}>
-        <TextField label="Full name" placeholder="Priya Nair" value={name} onChangeText={setName} />
+        {!isLogin ? <TextField label="Full name" placeholder="Priya Nair" value={name} onChangeText={setName} /> : null}
         {PHONE_OTP_ENABLED ? (
           <TextField
             label="Mobile number"
@@ -258,35 +272,39 @@ export default function AuthScreen() {
             onChangeText={setPhone}
           />
         ) : null}
-        <TextField
-          label="Referral code (optional)"
-          placeholder="e.g. AB12CD"
-          autoCapitalize="characters"
-          value={referralCode}
-          onChangeText={setReferralCode}
-        />
-        <Pressable
-          style={styles.consentRow}
-          onPress={() => setConsentGiven((v) => !v)}
-          accessibilityRole="checkbox"
-          accessibilityState={{ checked: consentGiven }}
-          accessibilityLabel="Accept Terms of Service and Privacy Policy"
-        >
-          <View style={[styles.checkbox, consentGiven && styles.checkboxChecked]}>
-            {consentGiven ? <Check size={13} color="#fff" strokeWidth={3} /> : null}
-          </View>
-          <Text style={styles.consentLabel}>
-            I agree to the{" "}
-            <Text style={styles.consentLink} onPress={() => router.push("/terms")}>
-              Terms of Service
-            </Text>{" "}
-            and{" "}
-            <Text style={styles.consentLink} onPress={() => router.push("/privacy")}>
-              Privacy Policy
+        {!isLogin ? (
+          <TextField
+            label="Referral code (optional)"
+            placeholder="e.g. AB12CD"
+            autoCapitalize="characters"
+            value={referralCode}
+            onChangeText={setReferralCode}
+          />
+        ) : null}
+        {!isLogin ? (
+          <Pressable
+            style={styles.consentRow}
+            onPress={() => setConsentGiven((v) => !v)}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: consentGiven }}
+            accessibilityLabel="Accept Terms of Service and Privacy Policy"
+          >
+            <View style={[styles.checkbox, consentGiven && styles.checkboxChecked]}>
+              {consentGiven ? <Check size={13} color="#fff" strokeWidth={3} /> : null}
+            </View>
+            <Text style={styles.consentLabel}>
+              I agree to the{" "}
+              <Text style={styles.consentLink} onPress={() => router.push("/terms")}>
+                Terms of Service
+              </Text>{" "}
+              and{" "}
+              <Text style={styles.consentLink} onPress={() => router.push("/privacy")}>
+                Privacy Policy
+              </Text>
+              .
             </Text>
-            .
-          </Text>
-        </Pressable>
+          </Pressable>
+        ) : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {PHONE_OTP_ENABLED ? (
           <>
@@ -317,6 +335,16 @@ export default function AuthScreen() {
           onPress={() => void handleEmailContinue()}
         />
       </View>
+
+      {isLogin ? (
+        <Link href="/auth" style={styles.footerLink}>
+          New to CuraLink? <Text style={styles.footerLinkAccent}>Get started</Text>
+        </Link>
+      ) : (
+        <Link href={{ pathname: "/auth", params: { mode: "login" } }} style={styles.footerLink}>
+          Already have an account? <Text style={styles.footerLinkAccent}>Sign in</Text>
+        </Link>
+      )}
     </View>
   );
 }
