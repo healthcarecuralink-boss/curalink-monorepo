@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { router } from "expo-router";
 import { Check, MapPin } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { createAddress, fetchFamilyMembers, supabase } from "@curalink/api-client";
 import { Button, curalinkFonts, useTheme } from "@curalink/ui";
 
@@ -10,7 +10,27 @@ import { Button, curalinkFonts, useTheme } from "@curalink/ui";
 // uses for provider service areas (see apps/curalink-plus/availability-setup.tsx),
 // not actual live location. A precise address is still collected later at
 // booking time (booking/new.tsx) if the user needs one.
-const areas = ["Jubilee Hills", "Banjara Hills", "Kondapur", "Madhapur", "Gachibowli", "Secunderabad"];
+//
+// The 15 areas below are spread across Hyderabad's main zones (IT corridor,
+// central, north, south, east, old city) so most families find their own
+// locality without needing the free-text fallback.
+const areas = [
+  "Banjara Hills",
+  "Jubilee Hills",
+  "Gachibowli",
+  "Madhapur",
+  "Kondapur",
+  "HITEC City",
+  "Kukatpally",
+  "Ameerpet",
+  "Secunderabad",
+  "Begumpet",
+  "Dilsukhnagar",
+  "LB Nagar",
+  "Uppal",
+  "Malkajgiri",
+  "Old City",
+];
 
 export default function LocationSetupScreen() {
   const { colors } = useTheme();
@@ -70,6 +90,23 @@ export default function LocationSetupScreen() {
         areaTextSelected: {
           color: colors.ink,
         },
+        orDivider: {
+          fontSize: 12,
+          fontWeight: "700",
+          color: colors.muted,
+          marginTop: 24,
+          marginBottom: 10,
+        },
+        customInput: {
+          fontSize: 14,
+          color: colors.ink,
+          backgroundColor: colors.surface,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+          borderRadius: 14,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+        },
         cta: {
           marginTop: 32,
         },
@@ -85,6 +122,7 @@ export default function LocationSetupScreen() {
   );
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [customAddress, setCustomAddress] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function goNext(ownerId: string) {
@@ -101,12 +139,13 @@ export default function LocationSetupScreen() {
       const ownerId = session?.user.id;
       if (!ownerId) return;
 
-      if (selectedArea) {
+      const line1 = customAddress.trim() || selectedArea;
+      if (line1) {
         await createAddress({
           owner_id: ownerId,
           label: "Home",
-          line1: selectedArea,
-          neighborhood: selectedArea,
+          line1,
+          neighborhood: selectedArea ?? line1,
           city: "Hyderabad",
           state: "Telangana",
           is_default: true,
@@ -160,9 +199,18 @@ export default function LocationSetupScreen() {
         })}
       </View>
 
+      <Text style={styles.orDivider}>DON&apos;T SEE YOUR AREA? (OPTIONAL)</Text>
+      <TextInput
+        style={styles.customInput}
+        placeholder="Type your area or address"
+        placeholderTextColor={colors.muted}
+        value={customAddress}
+        onChangeText={setCustomAddress}
+      />
+
       <Button
         label={isSubmitting ? "Saving..." : "Continue"}
-        disabled={isSubmitting || !selectedArea}
+        disabled={isSubmitting || (!selectedArea && !customAddress.trim())}
         onPress={() => void handleContinue()}
         style={styles.cta}
       />
