@@ -82,7 +82,12 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer}
 .lnav-links{display:flex;gap:22px}
 .lnav-links a{font-size:14px;font-weight:500;color:rgba(255,255,255,.5);transition:color .2s}
 .lnav-links a:hover{color:#fff}
-.lnav-right{display:flex;gap:10px}
+.lnav-right{display:flex;align-items:center;gap:10px}
+.lnav-roles{display:flex;align-items:center;gap:10px}
+.lnav-signin{display:inline-flex;align-items:center;text-decoration:none}
+@media(max-width:980px){.lnav-links{display:none}}
+@media(max-width:760px){.lnav-roles{display:none}}
+@media(max-width:480px){.lnav-signin{display:none}.lnav{padding:0 4vw}.lnav-logo img{height:26px}}
 .btn-ghost{padding:8px 17px;border-radius:8px;border:1px solid rgba(255,255,255,.15);font-size:13px;font-weight:600;color:#fff;background:transparent;transition:all .2s}
 .btn-ghost:hover{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.07)}
 .btn-solid{padding:8px 18px;border-radius:8px;border:none;background:var(--teal);color:#fff;font-size:13px;font-weight:600;transition:all .2s}
@@ -103,7 +108,7 @@ button{font-family:'DM Sans',sans-serif;cursor:pointer}
 .btn-hs{padding:13px 26px;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;font-family:'Sora',sans-serif;font-weight:600;font-size:14px;border:1px solid rgba(255,255,255,.2);transition:all .2s}
 .btn-hs:hover{background:rgba(255,255,255,.18)}
 .hero-perks{display:flex;flex-wrap:wrap;gap:10px}
-.perk{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.42)}
+.perk{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.6)}
 
 /* HERO CARD */
 .hcard{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;animation:floatUp .8s ease both .3s;opacity:0}
@@ -654,11 +659,13 @@ footer{background:var(--navy-c);border-top:1px solid var(--nb);padding:40px 5vw 
     <a href="#how">How It Works</a>
   </div>
   <div class="lnav-right">
-    <button class="btn-ghost" onclick="enterDocApp()">Doctor</button>
-    <button class="btn-ghost" onclick="enterNurseApp()">Care Team</button>
-    <button class="btn-ghost" onclick="enterVetApp()">Vet</button>
-    <button class="btn-ghost" onclick="enterApp()">Partner</button>
-    <a class="btn-ghost" href="/app" style="text-decoration:none;display:inline-flex;align-items:center">Sign in</a>
+    <div class="lnav-roles">
+      <button class="btn-ghost" onclick="enterDocApp()">Doctor</button>
+      <button class="btn-ghost" onclick="enterNurseApp()">Care Team</button>
+      <button class="btn-ghost" onclick="enterVetApp()">Vet</button>
+      <button class="btn-ghost" onclick="enterApp()">Partner</button>
+    </div>
+    <a class="btn-ghost lnav-signin" href="/app">Sign in</a>
     <button class="btn-solid" onclick="openModal()">Join Early Access</button>
   </div>
 </nav>
