@@ -37,3 +37,34 @@ export async function createInsuranceClaim(claim: InsuranceClaimInsert): Promise
   if (error) throw error;
   return data;
 }
+
+// Uploads a policy card photo or claim receipt to the private
+// insurance-documents bucket. Path convention matches
+// uploadProfessionalDocument: {profile_id}/{docType}-{timestamp}.{ext}, so
+// RLS can scope access by the first path segment matching the uploader.
+export async function uploadInsuranceDocument(
+  profileId: string,
+  docType: "policy" | "claim",
+  file: { uri: string; name: string; mimeType?: string | null },
+): Promise<string> {
+  const response = await fetch(file.uri);
+  const blob = await response.blob();
+  const extMatch = /\.([a-zA-Z0-9]+)$/.exec(file.name);
+  const ext = extMatch?.[1]?.toLowerCase() ?? "bin";
+  const path = `${profileId}/${docType}-${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("insurance-documents")
+    .upload(path, blob, {
+      contentType: file.mimeType ?? blob.type ?? "application/octet-stream",
+      upsert: false,
+    });
+  if (error) throw error;
+  return path;
+}
+
+export async function fetchInsuranceDocumentUrl(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage.from("insurance-documents").createSignedUrl(path, 60 * 10);
+  if (error) throw error;
+  return data.signedUrl;
+}

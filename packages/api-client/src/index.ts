@@ -224,7 +224,14 @@ export {
   subscribeToAssistantMessages,
 } from "./curaAssistant";
 
-export { fetchInsurancePolicies, createInsurancePolicy, fetchInsuranceClaims, createInsuranceClaim } from "./insurance";
+export {
+  fetchInsurancePolicies,
+  createInsurancePolicy,
+  fetchInsuranceClaims,
+  createInsuranceClaim,
+  uploadInsuranceDocument,
+  fetchInsuranceDocumentUrl,
+} from "./insurance";
 
 export { fetchReminders, createReminder, deleteReminder } from "./reminders";
 

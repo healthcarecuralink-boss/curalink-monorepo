@@ -206,10 +206,19 @@ export interface JobDetail {
   booking: Booking;
   serviceName: string;
   patientName: string | null;
+  patientAge: number | null;
+  patientAllergies: string[];
+  patientConditions: string[];
   addressLine: string | null;
   addressLat: number | null;
   addressLng: number | null;
   consumerPhone: string | null;
+}
+
+function ageFromDob(dob: string | null): number | null {
+  if (!dob) return null;
+  const diffMs = Date.now() - new Date(dob).getTime();
+  return Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
 }
 
 export async function fetchJobDetail(id: string): Promise<JobDetail | null> {
@@ -220,7 +229,11 @@ export async function fetchJobDetail(id: string): Promise<JobDetail | null> {
   const [{ data: service }, { data: patient }, { data: address }, { data: consumer }] = await Promise.all([
     supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle(),
     booking.patient_id
-      ? supabase.from("family_members").select("full_name").eq("id", booking.patient_id).maybeSingle()
+      ? supabase
+          .from("family_members")
+          .select("full_name, date_of_birth, allergies, conditions")
+          .eq("id", booking.patient_id)
+          .maybeSingle()
       : Promise.resolve({ data: null }),
     booking.address_id
       ? supabase.from("addresses").select("line1, neighborhood, lat, lng").eq("id", booking.address_id).maybeSingle()
@@ -232,6 +245,9 @@ export async function fetchJobDetail(id: string): Promise<JobDetail | null> {
     booking,
     serviceName: service?.name ?? "Visit",
     patientName: patient?.full_name ?? null,
+    patientAge: ageFromDob(patient?.date_of_birth ?? null),
+    patientAllergies: patient?.allergies ?? [],
+    patientConditions: patient?.conditions ?? [],
     addressLine: address ? `${address.line1}, ${address.neighborhood ?? ""}`.trim() : null,
     addressLat: address?.lat ?? null,
     addressLng: address?.lng ?? null,

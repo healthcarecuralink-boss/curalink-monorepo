@@ -836,13 +836,22 @@ export interface Database {
         Relationships: [];
       };
       insurance_policies: {
-        Row: { id: string; profile_id: string; provider_name: string; policy_number: string; expiry_date: string | null; created_at: string };
+        Row: {
+          id: string;
+          profile_id: string;
+          provider_name: string;
+          policy_number: string;
+          expiry_date: string | null;
+          document_path: string | null;
+          created_at: string;
+        };
         Insert: {
           id?: string;
           profile_id: string;
           provider_name: string;
           policy_number: string;
           expiry_date?: string | null;
+          document_path?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["insurance_policies"]["Insert"]>;
@@ -857,6 +866,7 @@ export interface Database {
           pharmacy_order_id: string | null;
           claim_amount: number;
           description: string | null;
+          document_path: string | null;
           status: "submitted" | "under_review" | "approved" | "rejected" | "paid";
           created_at: string;
         };
@@ -868,6 +878,7 @@ export interface Database {
           pharmacy_order_id?: string | null;
           claim_amount: number;
           description?: string | null;
+          document_path?: string | null;
           status?: "submitted" | "under_review" | "approved" | "rejected" | "paid";
           created_at?: string;
         };

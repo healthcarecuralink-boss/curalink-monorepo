@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, MessageCircle, Navigation } from "lucide-react-native";
+import { AlertTriangle, ArrowLeft, MessageCircle, Navigation } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   acceptJob,
@@ -129,7 +129,8 @@ export default function JobDetailScreen() {
     );
   }
 
-  const { booking, serviceName, patientName, addressLine, addressLat, addressLng } = detail;
+  const { booking, serviceName, patientName, patientAge, patientAllergies, patientConditions, addressLine, addressLat, addressLng } = detail;
+  const hasPatientHistory = Boolean(patientName) && (patientAllergies.length > 0 || patientConditions.length > 0 || patientAge !== null);
   const mapMarkers: LeafletMarker[] = [];
   if (isEnRoute && myLocation) {
     mapMarkers.push({ id: "me", lat: myLocation.lat, lng: myLocation.lng, color: "#0F7A5E", label: "Me", pulse: true });
@@ -168,6 +169,36 @@ export default function JobDetailScreen() {
         <Row label="Price" value={`₹${booking.price}`} colors={colors} />
         <Row label="Scheduled" value={new Date(booking.scheduled_at).toLocaleString("en-IN")} colors={colors} />
       </Card>
+
+      {hasPatientHistory ? (
+        <Card>
+          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            Patient snapshot
+          </Text>
+          {patientAge !== null ? <Row label="Age" value={`${patientAge} yrs`} colors={colors} /> : null}
+          {patientAllergies.length > 0 ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "flex-start",
+                gap: 8,
+                backgroundColor: "#FCE8E8",
+                borderRadius: 10,
+                padding: 10,
+                marginTop: 8,
+              }}
+            >
+              <AlertTriangle size={16} color={colors.error} strokeWidth={2} />
+              <Text style={{ flex: 1, fontSize: 12.5, fontWeight: "600", color: colors.error }}>
+                Allergies: {patientAllergies.join(", ")}
+              </Text>
+            </View>
+          ) : null}
+          {patientConditions.length > 0 ? (
+            <Text style={{ fontSize: 12.5, color: colors.muted, marginTop: 8 }}>Conditions: {patientConditions.join(", ")}</Text>
+          ) : null}
+        </Card>
+      ) : null}
 
       {booking.status === "pending" ? (
         <Button label={isSubmitting ? "Accepting..." : "Accept job"} disabled={isSubmitting} onPress={() => void handleAccept()} />

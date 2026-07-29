@@ -1,14 +1,17 @@
 import { useMemo, useState } from "react";
 import { router } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Plus, ShieldCheck } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ArrowLeft, FileText, Paperclip, Plus, ShieldCheck } from "lucide-react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   createInsuranceClaim,
   createInsurancePolicy,
   fetchInsuranceClaims,
+  fetchInsuranceDocumentUrl,
   fetchInsurancePolicies,
   fetchPastBookings,
+  uploadInsuranceDocument,
   useSessionStore,
 } from "@curalink/api-client";
 import { Button, Card, EmptyState, Skeleton, StatusPill, TextField, curalinkFonts, curalinkStatusPillColors, useTheme } from "@curalink/ui";
@@ -72,6 +75,8 @@ export default function InsuranceScreen() {
   const [policyNumber, setPolicyNumber] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [isSavingPolicy, setIsSavingPolicy] = useState(false);
+  const [policyDocPath, setPolicyDocPath] = useState<string | null>(null);
+  const [isUploadingPolicyDoc, setIsUploadingPolicyDoc] = useState(false);
 
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [selectedPolicyId, setSelectedPolicyId] = useState<string | null>(null);
@@ -79,6 +84,8 @@ export default function InsuranceScreen() {
   const [claimAmount, setClaimAmount] = useState("");
   const [claimDescription, setClaimDescription] = useState("");
   const [isSavingClaim, setIsSavingClaim] = useState(false);
+  const [claimDocPath, setClaimDocPath] = useState<string | null>(null);
+  const [isUploadingClaimDoc, setIsUploadingClaimDoc] = useState(false);
 
   const { data: policies } = useQuery({
     queryKey: ["insurancePolicies", profileId],
@@ -97,6 +104,39 @@ export default function InsuranceScreen() {
   });
   const completedBookings = (pastBookings ?? []).filter((b) => b.status === "completed");
 
+  async function handlePickPolicyDoc() {
+    if (!profileId) return;
+    const result = await DocumentPicker.getDocumentAsync({ type: ["image/*", "application/pdf"], copyToCacheDirectory: true });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setIsUploadingPolicyDoc(true);
+    try {
+      const path = await uploadInsuranceDocument(profileId, "policy", { uri: asset.uri, name: asset.name, mimeType: asset.mimeType });
+      setPolicyDocPath(path);
+    } finally {
+      setIsUploadingPolicyDoc(false);
+    }
+  }
+
+  async function handlePickClaimDoc() {
+    if (!profileId) return;
+    const result = await DocumentPicker.getDocumentAsync({ type: ["image/*", "application/pdf"], copyToCacheDirectory: true });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setIsUploadingClaimDoc(true);
+    try {
+      const path = await uploadInsuranceDocument(profileId, "claim", { uri: asset.uri, name: asset.name, mimeType: asset.mimeType });
+      setClaimDocPath(path);
+    } finally {
+      setIsUploadingClaimDoc(false);
+    }
+  }
+
+  async function handleViewDocument(path: string) {
+    const url = await fetchInsuranceDocumentUrl(path);
+    if (url) void Linking.openURL(url);
+  }
+
   async function handleAddPolicy() {
     if (!profileId || !providerName.trim() || !policyNumber.trim()) return;
     setIsSavingPolicy(true);
@@ -106,10 +146,12 @@ export default function InsuranceScreen() {
         provider_name: providerName,
         policy_number: policyNumber,
         expiry_date: expiryDate.trim() || null,
+        document_path: policyDocPath,
       });
       setProviderName("");
       setPolicyNumber("");
       setExpiryDate("");
+      setPolicyDocPath(null);
       setShowPolicyForm(false);
       void queryClient.invalidateQueries({ queryKey: ["insurancePolicies", profileId] });
     } finally {
@@ -127,11 +169,13 @@ export default function InsuranceScreen() {
         booking_id: selectedBookingId,
         claim_amount: Number(claimAmount),
         description: claimDescription || null,
+        document_path: claimDocPath,
       });
       setSelectedPolicyId(null);
       setSelectedBookingId(null);
       setClaimAmount("");
       setClaimDescription("");
+      setClaimDocPath(null);
       setShowClaimForm(false);
       void queryClient.invalidateQueries({ queryKey: ["insuranceClaims", profileId] });
     } finally {
@@ -166,6 +210,11 @@ export default function InsuranceScreen() {
               <ShieldCheck size={18} color={colors.primary} strokeWidth={1.8} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.policyName}>{policy.provider_name}</Text>
+                {policy.document_path ? (
+                  <Pressable onPress={() => void handleViewDocument(policy.document_path as string)}>
+                    <Text style={[styles.policyMeta, { color: colors.primary, fontWeight: "700" }]}>View attached document</Text>
+                  </Pressable>
+                ) : null}
                 <Text style={styles.policyMeta}>
                   Policy #{policy.policy_number}
                   {policy.expiry_date ? ` · Expires ${policy.expiry_date}` : ""}
@@ -184,6 +233,13 @@ export default function InsuranceScreen() {
           <TextField label="Insurance provider" value={providerName} onChangeText={setProviderName} />
           <TextField label="Policy number" value={policyNumber} onChangeText={setPolicyNumber} />
           <TextField label="Expiry date (optional, YYYY-MM-DD)" placeholder="2027-12-31" value={expiryDate} onChangeText={setExpiryDate} />
+          <Button
+            label={isUploadingPolicyDoc ? "Uploading..." : policyDocPath ? "Photo attached ✓" : "Attach policy card photo (optional)"}
+            variant="secondary"
+            icon={<Paperclip size={16} color={colors.ink} />}
+            disabled={isUploadingPolicyDoc}
+            onPress={() => void handlePickPolicyDoc()}
+          />
           <Button
             label={isSavingPolicy ? "Saving..." : "Save policy"}
             disabled={!providerName.trim() || !policyNumber.trim() || isSavingPolicy}
@@ -238,6 +294,13 @@ export default function InsuranceScreen() {
           <TextField label="Claim amount (₹)" keyboardType="number-pad" value={claimAmount} onChangeText={setClaimAmount} />
           <TextField label="Description (optional)" value={claimDescription} onChangeText={setClaimDescription} multiline />
           <Button
+            label={isUploadingClaimDoc ? "Uploading..." : claimDocPath ? "Receipt attached ✓" : "Attach receipt or bill (optional)"}
+            variant="secondary"
+            icon={<Paperclip size={16} color={colors.ink} />}
+            disabled={isUploadingClaimDoc}
+            onPress={() => void handlePickClaimDoc()}
+          />
+          <Button
             label={isSavingClaim ? "Submitting..." : "Submit claim"}
             disabled={!selectedPolicyId || !selectedBookingId || !claimAmount.trim() || isSavingClaim}
             onPress={() => void handleSubmitClaim()}
@@ -258,6 +321,11 @@ export default function InsuranceScreen() {
                 <Text style={styles.claimAmount}>₹{claim.claim_amount}</Text>
                 <Text style={styles.claimMeta}>{new Date(claim.created_at).toLocaleDateString("en-IN")}</Text>
                 {claim.description ? <Text style={styles.claimMeta}>{claim.description}</Text> : null}
+                {claim.document_path ? (
+                  <Pressable onPress={() => void handleViewDocument(claim.document_path as string)}>
+                    <Text style={[styles.claimMeta, { color: colors.primary, fontWeight: "700" }]}>View attached document</Text>
+                  </Pressable>
+                ) : null}
               </View>
               <StatusPill label={claim.status.replace("_", " ")} {...claimStatusPill(claim.status)} />
             </Card>
