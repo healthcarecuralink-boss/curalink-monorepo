@@ -13,6 +13,7 @@ import {
   type ProfessionalRole,
 } from "@curalink/api-client";
 import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
+import { TeamAnnouncementBanner } from "../TeamAnnouncementBanner";
 
 
 export function NurseVetHome({ role }: { role: Extract<ProfessionalRole, "nurse" | "vet"> }) {
@@ -82,6 +83,7 @@ export function NurseVetHome({ role }: { role: Extract<ProfessionalRole, "nurse"
 
   return (
     <View style={styles.container}>
+      <TeamAnnouncementBanner />
       <Card style={[styles.dutyCard, { borderColor: isOnDuty ? accent : colors.border }]}>
         <View style={{ flex: 1 }}>
           <View style={styles.dutyRow}>

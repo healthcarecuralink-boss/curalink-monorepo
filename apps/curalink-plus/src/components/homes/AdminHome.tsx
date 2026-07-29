@@ -1,16 +1,28 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Ambulance, ArrowRightLeft, AlertTriangle, BarChart3, ChevronRight, Map, Pill, ShieldCheck, Users } from "lucide-react-native";
+import {
+  Ambulance,
+  ArrowRightLeft,
+  AlertTriangle,
+  BarChart3,
+  ChevronRight,
+  Map,
+  Megaphone,
+  Pill,
+  ShieldCheck,
+  Users,
+} from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
   fetchEscalatedAmbulanceRequests,
   fetchEscalatedBookings,
   fetchMyTeam,
   fetchTeamRoster,
+  sendTeamAnnouncement,
   useSessionStore,
 } from "@curalink/api-client";
-import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
+import { Button, Card, EmptyState, Skeleton, TextField, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 
 const accent = roleAccents.admin;
 
@@ -92,6 +104,11 @@ export function AdminHome() {
     );
   const session = useSessionStore((s) => s.session);
   const userId = session?.user.id;
+  const queryClient = useQueryClient();
+
+  const [showAnnounceForm, setShowAnnounceForm] = useState(false);
+  const [announceMessage, setAnnounceMessage] = useState("");
+  const [isSendingAnnouncement, setIsSendingAnnouncement] = useState(false);
 
   const { data: team } = useQuery({
     queryKey: ["myTeam", userId],
@@ -118,6 +135,19 @@ export function AdminHome() {
   const pharmacyCount = roster?.filter((m) => m.role === "pharmacy").length ?? 0;
   const ambulanceCount = roster?.filter((m) => m.role === "ambulance").length ?? 0;
   const escalatedCount = (escalatedBookings?.length ?? 0) + (escalatedAmbulanceRequests?.length ?? 0);
+
+  async function handleSendAnnouncement() {
+    if (!team?.id || !announceMessage.trim()) return;
+    setIsSendingAnnouncement(true);
+    try {
+      await sendTeamAnnouncement(team.id, announceMessage.trim());
+      setAnnounceMessage("");
+      setShowAnnounceForm(false);
+      void queryClient.invalidateQueries({ queryKey: ["teamAnnouncements", team.id] });
+    } finally {
+      setIsSendingAnnouncement(false);
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -158,6 +188,41 @@ export function AdminHome() {
         <ArrowRightLeft size={16} color={accent} strokeWidth={1.8} />
         <Text style={styles.reassignLabel}>Reassign a job</Text>
       </Pressable>
+
+      {!showAnnounceForm ? (
+        <Pressable style={styles.reassignCard} onPress={() => setShowAnnounceForm(true)}>
+          <Megaphone size={16} color={accent} strokeWidth={1.8} />
+          <Text style={styles.reassignLabel}>Send a team announcement</Text>
+        </Pressable>
+      ) : (
+        <Card style={{ gap: 10 }}>
+          <Text style={styles.sectionTitle}>Send a team announcement</Text>
+          <TextField
+            label="Message"
+            placeholder="e.g. High demand today, please pick up shifts if you can"
+            value={announceMessage}
+            onChangeText={setAnnounceMessage}
+            multiline
+          />
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Button
+              label="Cancel"
+              variant="secondary"
+              style={{ flex: 1 }}
+              onPress={() => {
+                setShowAnnounceForm(false);
+                setAnnounceMessage("");
+              }}
+            />
+            <Button
+              label={isSendingAnnouncement ? "Sending..." : "Send to team"}
+              style={{ flex: 1 }}
+              disabled={!announceMessage.trim() || isSendingAnnouncement}
+              onPress={() => void handleSendAnnouncement()}
+            />
+          </View>
+        </Card>
+      )}
 
       <View style={styles.partnerRow}>
         <Pressable style={styles.partnerCard} onPress={() => router.push("/pharmacy-network")}>

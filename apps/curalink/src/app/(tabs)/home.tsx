@@ -10,6 +10,7 @@ import {
   MessageCircleHeart,
   Siren,
   Sparkles,
+  Stethoscope,
   Zap,
 } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -478,6 +479,16 @@ export default function HomeScreen() {
         <View style={{ flex: 1 }}>
           <Text style={styles.assistantTitle}>Ask Cura, your care assistant</Text>
           <Text style={styles.assistantSubtitle}>Book, track, refill — just tell it what you need</Text>
+        </View>
+      </Pressable>
+
+      <Pressable style={styles.assistantBanner} onPress={() => router.push("/symptom-checker")}>
+        <View style={[styles.assistantIcon, { backgroundColor: colors.chipNeutral ?? colors.navy }]}>
+          <Stethoscope size={20} color={colors.navy} strokeWidth={1.8} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.assistantTitle}>Not sure what you need?</Text>
+          <Text style={styles.assistantSubtitle}>Tell us your symptom, we&apos;ll pick the right specialist</Text>
         </View>
       </Pressable>
 

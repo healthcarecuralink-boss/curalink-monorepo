@@ -145,6 +145,12 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["team_members"]["Insert"]>;
         Relationships: [];
       };
+      team_announcements: {
+        Row: { id: string; team_id: string; admin_id: string; message: string; created_at: string };
+        Insert: { id?: string; team_id: string; admin_id: string; message: string; created_at?: string };
+        Update: Partial<Database["public"]["Tables"]["team_announcements"]["Insert"]>;
+        Relationships: [];
+      };
       team_invitations: {
         Row: {
           id: string;
@@ -981,6 +987,7 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       request_role: { Args: { p_role: string }; Returns: void };
+      send_team_announcement: { Args: { p_team_id: string; p_message: string }; Returns: void };
       approve_role: { Args: { p_professional_id: string; p_role: string }; Returns: void };
       reject_role: { Args: { p_professional_id: string; p_role: string }; Returns: void };
       team_admin_of: { Args: { p_professional_id: string }; Returns: string | null };

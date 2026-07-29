@@ -11,6 +11,7 @@ import {
   useSessionStore,
 } from "@curalink/api-client";
 import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
+import { TeamAnnouncementBanner } from "../TeamAnnouncementBanner";
 
 const accent = roleAccents.doctor;
 
@@ -82,6 +83,7 @@ export function DoctorHome() {
 
   return (
     <View style={styles.container}>
+      <TeamAnnouncementBanner />
       <Card style={[styles.dutyCard, { borderColor: isOnDuty ? accent : colors.border }]}>
         <View style={{ flex: 1 }}>
           <View style={styles.dutyRow}>

@@ -127,6 +127,41 @@ export async function fetchMyTeam(adminId: string): Promise<Database["public"]["
   return data;
 }
 
+// A team member (not the admin) doesn't have a "my team" row of their own --
+// team_members is where their team_id actually lives.
+export async function fetchMyTeamId(professionalId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("team_members")
+    .select("team_id")
+    .eq("professional_id", professionalId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (error) throw error;
+  return data?.team_id ?? null;
+}
+
+type TeamAnnouncement = Database["public"]["Tables"]["team_announcements"]["Row"];
+
+export async function fetchTeamAnnouncements(teamId: string): Promise<TeamAnnouncement[]> {
+  const { data, error } = await supabase
+    .from("team_announcements")
+    .select("*")
+    .eq("team_id", teamId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (error) throw error;
+  return data;
+}
+
+// Security-definer RPC, not a direct table insert -- send_team_announcement
+// verifies server-side that the caller is really this team's admin before
+// writing the announcement and fanning out a real push notification to
+// every active team member.
+export async function sendTeamAnnouncement(teamId: string, message: string): Promise<void> {
+  const { error } = await supabase.rpc("send_team_announcement", { p_team_id: teamId, p_message: message });
+  if (error) throw error;
+}
+
 type PharmacyOrder = Database["public"]["Tables"]["pharmacy_orders"]["Row"];
 type AmbulanceRequest = Database["public"]["Tables"]["ambulance_requests"]["Row"];
 
