@@ -155,7 +155,13 @@ export async function signOut() {
 // device. This function's only remaining job is opening the browser and
 // detecting an explicit user cancel.
 export async function signInWithGoogle(): Promise<void> {
-  const redirectTo = Linking.createURL("auth-callback");
+  // On web, Linking.createURL() resolves the path against the origin only --
+  // it doesn't know about Expo Router's `experiments.baseUrl: "/app"` (see
+  // app.json), so a bare "auth-callback" produces .../auth-callback instead
+  // of .../app/auth-callback, which Netlify's _redirects has no rule for and
+  // 404s. Native deep links aren't affected: curalink://auth-callback has no
+  // baseUrl concept, so that path stays unprefixed.
+  const redirectTo = Linking.createURL(Platform.OS === "web" ? "app/auth-callback" : "auth-callback");
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo, skipBrowserRedirect: true },
