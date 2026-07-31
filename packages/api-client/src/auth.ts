@@ -173,7 +173,8 @@ export async function signInWithGoogle(): Promise<void> {
     // Linking listener (via Linking.getInitialURL()) picks the session up
     // from that URL the same way it already handles a native deep link.
     // No DOM lib in this package's tsconfig (native-first), hence the cast.
-    (globalThis as any).window?.location.assign(data.url);
+    const webGlobal = globalThis as unknown as { window?: { location: { assign: (url: string) => void } } };
+    webGlobal.window?.location.assign(data.url);
     return;
   }
 

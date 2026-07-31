@@ -104,7 +104,7 @@ export default function AddTeamMemberScreen() {
       </View>
 
       <Text style={styles.note}>
-        Search CuraLink-verified professionals by name or phone and send them a request to join your roster. They'll
+        Search CuraLink-verified professionals by name or phone and send them a request to join your roster. They&apos;ll
         need to accept before they show up as a team member.
       </Text>
 
