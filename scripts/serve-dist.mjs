@@ -30,6 +30,7 @@ const MIME = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
+  ".mp4": "video/mp4",
   ".ico": "image/x-icon",
   ".ttf": "font/ttf",
   ".woff2": "font/woff2",
