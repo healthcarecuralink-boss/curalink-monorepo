@@ -251,7 +251,7 @@ export default function OtpScreen() {
         </Text>
       </Text>
 
-      <View style={styles.boxRow} onTouchEnd={() => inputRef.current?.focus()}>
+      <Pressable style={styles.boxRow} onPress={() => inputRef.current?.focus()}>
         {Array.from({ length: CODE_LENGTH }).map((_, i) => {
           const filled = i < code.length;
           const isActive = i === code.length;
@@ -267,7 +267,7 @@ export default function OtpScreen() {
             </View>
           );
         })}
-      </View>
+      </Pressable>
       <TextInput
         ref={inputRef}
         value={code}
