@@ -5,6 +5,7 @@ import { ChevronRight, FileText, IndianRupee, MessageSquareText, Star, Video } f
 import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import {
   fetchAvailableJobs,
+  fetchCompletedBookingsSince,
   fetchProfessionalProfile,
   setOnDuty,
   subscribeToAvailableJobs,
@@ -14,6 +15,12 @@ import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } 
 import { TeamAnnouncementBanner } from "../TeamAnnouncementBanner";
 
 const accent = roleAccents.doctor;
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export function DoctorHome() {
   const { colors } = useTheme();
@@ -63,6 +70,12 @@ export function DoctorHome() {
     queryFn: () => fetchAvailableJobs("doctor"),
     enabled: Boolean(professionalProfile?.is_on_duty),
   });
+  const { data: todayBookings } = useQuery({
+    queryKey: ["earnings", userId, "today"],
+    queryFn: () => fetchCompletedBookingsSince(userId as string, startOfToday()),
+    enabled: Boolean(userId),
+  });
+  const earnedToday = todayBookings?.reduce((total, b) => total + Number(b.price) + Number(b.tip_amount), 0) ?? 0;
 
   useEffect(() => {
     const channel = subscribeToAvailableJobs(() => {
@@ -103,7 +116,7 @@ export function DoctorHome() {
         <Card style={styles.statCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <IndianRupee size={14} color={colors.ink} />
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>{earnedToday}</Text>
           </View>
           <Text style={styles.statLabel}>Earned today</Text>
         </Card>

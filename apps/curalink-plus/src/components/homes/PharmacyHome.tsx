@@ -5,6 +5,7 @@ import { Package, Percent, ShoppingBag } from "lucide-react-native";
 import { StyleSheet, Switch, Text, View } from "react-native";
 import {
   fetchIncomingPharmacyOrders,
+  fetchPharmacyOrderHistory,
   fetchProfessionalProfile,
   setOnDuty,
   subscribeToIncomingPharmacyOrders,
@@ -14,6 +15,12 @@ import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } 
 import { TeamAnnouncementBanner } from "../TeamAnnouncementBanner";
 
 const accent = roleAccents.pharmacy;
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export function PharmacyHome() {
   const { colors } = useTheme();
@@ -53,6 +60,19 @@ export function PharmacyHome() {
     queryFn: () => fetchIncomingPharmacyOrders(),
     enabled: Boolean(professionalProfile?.is_on_duty),
   });
+  const { data: orderHistory } = useQuery({
+    queryKey: ["pharmacyOrderHistory", userId],
+    queryFn: () => fetchPharmacyOrderHistory(userId as string),
+    enabled: Boolean(userId),
+  });
+  const completedToday = orderHistory?.filter(
+    (o) => o.status === "completed" && new Date(o.updated_at) >= startOfToday(),
+  );
+  const revenueToday = completedToday?.reduce((total, o) => total + Number(o.total_price ?? 0), 0) ?? 0;
+  const completedCount = orderHistory?.filter((o) => o.status === "completed").length ?? 0;
+  const cancelledCount = orderHistory?.filter((o) => o.status === "cancelled").length ?? 0;
+  const fulfillmentRate =
+    completedCount + cancelledCount > 0 ? Math.round((completedCount / (completedCount + cancelledCount)) * 100) : null;
 
   useEffect(() => {
     const channel = subscribeToIncomingPharmacyOrders(() => {
@@ -93,11 +113,17 @@ export function PharmacyHome() {
           <Text style={styles.statLabel}>Orders today</Text>
         </Card>
         <Card style={styles.statCard}>
-          <ShoppingBag size={16} color={colors.ink} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <ShoppingBag size={14} color={colors.ink} />
+            <Text style={styles.statValue}>₹{revenueToday}</Text>
+          </View>
           <Text style={styles.statLabel}>Revenue today</Text>
         </Card>
         <Card style={styles.statCard}>
-          <Percent size={16} color={colors.ink} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Percent size={14} color={colors.ink} />
+            <Text style={styles.statValue}>{fulfillmentRate === null ? "—" : `${fulfillmentRate}%`}</Text>
+          </View>
           <Text style={styles.statLabel}>Fulfillment rate</Text>
         </Card>
       </View>

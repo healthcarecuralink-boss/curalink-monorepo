@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import {
   fetchActiveJob,
   fetchAvailableJobs,
+  fetchCompletedBookingsSince,
   fetchProfessionalProfile,
   setOnDuty,
   subscribeToAvailableJobs,
@@ -15,6 +16,11 @@ import {
 import { Card, EmptyState, Skeleton, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 import { TeamAnnouncementBanner } from "../TeamAnnouncementBanner";
 
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export function NurseVetHome({ role }: { role: Extract<ProfessionalRole, "nurse" | "vet"> }) {
   const { colors } = useTheme();
@@ -63,6 +69,12 @@ export function NurseVetHome({ role }: { role: Extract<ProfessionalRole, "nurse"
     queryFn: () => fetchAvailableJobs(role),
     enabled: Boolean(professionalProfile?.is_on_duty) && !activeJob,
   });
+  const { data: todayBookings } = useQuery({
+    queryKey: ["earnings", userId, "today"],
+    queryFn: () => fetchCompletedBookingsSince(userId as string, startOfToday()),
+    enabled: Boolean(userId),
+  });
+  const earnedToday = todayBookings?.reduce((total, b) => total + Number(b.price) + Number(b.tip_amount), 0) ?? 0;
 
   useEffect(() => {
     const channel = subscribeToAvailableJobs(() => {
@@ -112,7 +124,7 @@ export function NurseVetHome({ role }: { role: Extract<ProfessionalRole, "nurse"
         <Card style={styles.statCard}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <IndianRupee size={14} color={colors.ink} />
-            <Text style={styles.statValue}>0</Text>
+            <Text style={styles.statValue}>{earnedToday}</Text>
           </View>
           <Text style={styles.statLabel}>Earned today</Text>
         </Card>
