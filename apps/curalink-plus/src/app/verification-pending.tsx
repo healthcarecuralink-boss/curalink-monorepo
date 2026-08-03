@@ -1,10 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
-import { Check, Clock } from "lucide-react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, Clock, X } from "lucide-react-native";
 import { StyleSheet, Text, View } from "react-native";
-import { supabase, useSessionStore, type ProfessionalRole } from "@curalink/api-client";
-import { curalinkPlusFonts, useTheme } from "@curalink/ui";
+import { fetchProfessionalCredentials, requestRole, supabase, useSessionStore, type ProfessionalRole } from "@curalink/api-client";
+import { Button, curalinkPlusFonts, useTheme } from "@curalink/ui";
 
 
 const steps = [
@@ -54,22 +54,66 @@ export default function VerificationPendingScreen() {
   const { role } = useLocalSearchParams<{ role: ProfessionalRole }>();
   const session = useSessionStore((s) => s.session);
   const userId = session?.user.id;
+  const queryClient = useQueryClient();
+  const [isReapplying, setIsReapplying] = useState(false);
 
-  const { data: isApproved } = useQuery({
-    queryKey: ["roleApproved", userId, role],
+  const { data: status } = useQuery({
+    queryKey: ["roleApprovalStatus", userId, role],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("roles").eq("id", userId as string).single();
-      return Boolean(role && data?.roles?.includes(role));
+      const [{ data: profile }, credentials] = await Promise.all([
+        supabase.from("profiles").select("roles").eq("id", userId as string).single(),
+        fetchProfessionalCredentials(userId as string),
+      ]);
+      const approved = Boolean(role && profile?.roles?.includes(role));
+      const stillPending = Boolean(role && credentials?.pending_roles.includes(role));
+      // A row-level verification_status of "rejected" only means something once
+      // the role is no longer pending or approved -- otherwise it's just stale
+      // from a past application (professional_credentials is one row per
+      // profile, not per role) or the applicant has already re-applied.
+      const rejected = !approved && !stillPending && credentials?.verification_status === "rejected";
+      return { approved, rejected };
     },
     enabled: Boolean(userId && role),
     refetchInterval: 10_000,
   });
 
   useEffect(() => {
-    if (isApproved) {
+    if (status?.approved) {
       router.replace({ pathname: "/approved", params: { role } });
     }
-  }, [isApproved, role]);
+  }, [status?.approved, role]);
+
+  async function handleReapply() {
+    if (!role) return;
+    setIsReapplying(true);
+    try {
+      await requestRole(role);
+      void queryClient.invalidateQueries({ queryKey: ["roleApprovalStatus", userId, role] });
+    } finally {
+      setIsReapplying(false);
+    }
+  }
+
+  if (status?.rejected) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.iconChip, { backgroundColor: "#FCE8E8" }]}>
+          <X size={30} color={colors.error} strokeWidth={1.8} />
+        </View>
+        <Text style={styles.title}>Application not approved</Text>
+        <Text style={styles.body}>
+          Your {role} application wasn&apos;t approved this time. This is usually about missing or unclear documents
+          — you can update your details and submit again.
+        </Text>
+        <Button
+          label={isReapplying ? "Resubmitting..." : "Update details & re-apply"}
+          onPress={() => void handleReapply()}
+          disabled={isReapplying}
+          style={{ marginTop: 24, alignSelf: "stretch" }}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

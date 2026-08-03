@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Bell, ChevronRight, HelpCircle, LogOut, MessageCircle, Settings, Star, UserPlus, Wallet } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { signOut, useSessionStore } from "@curalink/api-client";
-import { Button, Card, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
+import { Button, Card, confirmAction, curalinkPlusFonts, roleAccents, useTheme } from "@curalink/ui";
 
 
 export default function ProfileScreen() {
@@ -95,7 +95,14 @@ export default function ProfileScreen() {
         label="Sign out"
         variant="destructive"
         icon={<LogOut size={16} color={colors.error} />}
-        onPress={() => void signOut()}
+        onPress={() =>
+          confirmAction({
+            title: "Sign out?",
+            message: "You'll need to sign in again to access your account.",
+            confirmLabel: "Sign out",
+            onConfirm: () => void signOut(),
+          })
+        }
       />
     </ScrollView>
   );

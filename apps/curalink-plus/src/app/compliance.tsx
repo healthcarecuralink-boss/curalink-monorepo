@@ -30,6 +30,7 @@ export default function ComplianceScreen() {
           justifyContent: "center",
         },
         title: { fontFamily: curalinkPlusFonts.heading, fontSize: 20, color: colors.ink },
+        note: { fontSize: 12, color: colors.muted, lineHeight: 17 },
         sectionTitle: { fontFamily: curalinkPlusFonts.headingSemibold, fontSize: 14, color: colors.ink },
         memberRow: { flexDirection: "row", alignItems: "center", gap: 10 },
         memberName: { fontSize: 13.5, fontWeight: "700", color: colors.ink },
@@ -82,11 +83,16 @@ export default function ComplianceScreen() {
         <Text style={styles.title}>Compliance</Text>
       </View>
 
-      <Text style={styles.sectionTitle}>Needs document review</Text>
+      <Text style={styles.note}>
+        This is your own record that you&apos;ve collected each member&apos;s paperwork — CuraLink staff independently
+        reviews and approves the documents they upload, separately from this checklist.
+      </Text>
+
+      <Text style={styles.sectionTitle}>Needs paperwork collected</Text>
       {roster === undefined ? (
         <Skeleton height={70} borderRadius={13} />
       ) : needsReview.length === 0 ? (
-        <EmptyState icon={<ShieldCheck size={26} color={colors.primary} strokeWidth={1.6} />} title="Everyone's documents are verified" />
+        <EmptyState icon={<ShieldCheck size={26} color={colors.primary} strokeWidth={1.6} />} title="Everyone's paperwork is collected" />
       ) : (
         <View style={{ gap: 8 }}>
           {needsReview.map(({ member, profile }) => (
@@ -97,7 +103,7 @@ export default function ComplianceScreen() {
                 <Text style={styles.memberRole}>{member.role}</Text>
               </View>
               <Button
-                label="Mark verified"
+                label="Mark collected"
                 variant="secondary"
                 size="default"
                 disabled={actioningId === member.id}
@@ -110,7 +116,7 @@ export default function ComplianceScreen() {
 
       {verified.length > 0 ? (
         <>
-          <Text style={styles.sectionTitle}>Verified</Text>
+          <Text style={styles.sectionTitle}>Paperwork collected</Text>
           <View style={{ gap: 8 }}>
             {verified.map(({ member, profile }) => (
               <Card key={member.id} style={styles.memberRow}>

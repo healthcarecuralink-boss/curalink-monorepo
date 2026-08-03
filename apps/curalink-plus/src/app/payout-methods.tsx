@@ -4,7 +4,18 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Building2, Plus, Smartphone } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { createPayoutMethod, fetchPayoutMethods, useSessionStore } from "@curalink/api-client";
-import { Button, Card, EmptyState, Skeleton, TextField, curalinkPlusFonts, useTheme } from "@curalink/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  Skeleton,
+  TextField,
+  curalinkPlusFonts,
+  isValidBankAccountNumber,
+  isValidIfsc,
+  isValidUpiId,
+  useTheme,
+} from "@curalink/ui";
 
 
 export default function PayoutMethodsScreen() {
@@ -50,9 +61,19 @@ export default function PayoutMethodsScreen() {
   const [ifsc, setIfsc] = useState("");
   const [upiId, setUpiId] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ accountNumber?: string; ifsc?: string; upiId?: string }>({});
 
   async function handleAdd() {
     if (!userId || !showForm) return;
+    const errors: typeof fieldErrors = {};
+    if (showForm === "bank") {
+      if (!isValidBankAccountNumber(accountNumber)) errors.accountNumber = "Enter a valid account number (9-18 digits).";
+      if (!isValidIfsc(ifsc)) errors.ifsc = "Enter a valid IFSC code, e.g. HDFC0001234.";
+    } else if (!isValidUpiId(upiId)) {
+      errors.upiId = "Enter a valid UPI ID, e.g. name@bank.";
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
     setIsSaving(true);
     try {
       await createPayoutMethod({
@@ -70,6 +91,7 @@ export default function PayoutMethodsScreen() {
       setAccountNumber("");
       setIfsc("");
       setUpiId("");
+      setFieldErrors({});
     } finally {
       setIsSaving(false);
     }
@@ -118,19 +140,62 @@ export default function PayoutMethodsScreen() {
 
       {!showForm ? (
         <View style={styles.addRow}>
-          <Button label="Add bank account" variant="secondary" icon={<Plus size={16} color={colors.ink} />} onPress={() => setShowForm("bank")} />
-          <Button label="Add UPI" variant="secondary" icon={<Plus size={16} color={colors.ink} />} onPress={() => setShowForm("upi")} />
+          <Button
+            label="Add bank account"
+            variant="secondary"
+            icon={<Plus size={16} color={colors.ink} />}
+            onPress={() => {
+              setFieldErrors({});
+              setShowForm("bank");
+            }}
+          />
+          <Button
+            label="Add UPI"
+            variant="secondary"
+            icon={<Plus size={16} color={colors.ink} />}
+            onPress={() => {
+              setFieldErrors({});
+              setShowForm("upi");
+            }}
+          />
         </View>
       ) : (
         <Card style={{ gap: 12 }}>
           {showForm === "bank" ? (
             <>
               <TextField label="Account holder name" value={accountHolder} onChangeText={setAccountHolder} />
-              <TextField label="Account number" keyboardType="number-pad" value={accountNumber} onChangeText={setAccountNumber} />
-              <TextField label="IFSC code" autoCapitalize="characters" value={ifsc} onChangeText={setIfsc} />
+              <TextField
+                label="Account number"
+                keyboardType="number-pad"
+                value={accountNumber}
+                onChangeText={(v) => {
+                  setAccountNumber(v);
+                  if (fieldErrors.accountNumber) setFieldErrors((e) => ({ ...e, accountNumber: undefined }));
+                }}
+                error={fieldErrors.accountNumber}
+              />
+              <TextField
+                label="IFSC code"
+                autoCapitalize="characters"
+                value={ifsc}
+                onChangeText={(v) => {
+                  setIfsc(v);
+                  if (fieldErrors.ifsc) setFieldErrors((e) => ({ ...e, ifsc: undefined }));
+                }}
+                error={fieldErrors.ifsc}
+              />
             </>
           ) : (
-            <TextField label="UPI ID" placeholder="name@bank" value={upiId} onChangeText={setUpiId} />
+            <TextField
+              label="UPI ID"
+              placeholder="name@bank"
+              value={upiId}
+              onChangeText={(v) => {
+                setUpiId(v);
+                if (fieldErrors.upiId) setFieldErrors((e) => ({ ...e, upiId: undefined }));
+              }}
+              error={fieldErrors.upiId}
+            />
           )}
           <Button label={isSaving ? "Saving..." : "Save"} disabled={isSaving} onPress={() => void handleAdd()} />
         </Card>

@@ -320,6 +320,54 @@ export async function updateVisitFields(bookingId: string, patch: VisitFieldsPat
   if (error) throw error;
 }
 
+// Uploads one photo taken during a visit to the visit-photos bucket. Same
+// path convention as uploadProfessionalDocument ({profile_id}/...) so the
+// same owner-or-staff RLS shape applies, scoped further under the booking.
+export async function uploadVisitPhoto(
+  professionalId: string,
+  bookingId: string,
+  file: { uri: string; name: string; mimeType?: string | null },
+): Promise<string> {
+  const response = await fetch(file.uri);
+  const blob = await response.blob();
+  const extMatch = /\.([a-zA-Z0-9]+)$/.exec(file.name);
+  const ext = extMatch?.[1]?.toLowerCase() ?? "jpg";
+  const path = `${professionalId}/${bookingId}/${Date.now()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from("visit-photos")
+    .upload(path, blob, {
+      contentType: file.mimeType ?? blob.type ?? "image/jpeg",
+      upsert: false,
+    });
+  if (error) throw error;
+  return path;
+}
+
+export interface VisitPhoto {
+  path: string;
+  url: string;
+}
+
+// Lists this professional's uploaded photos for one visit with signed URLs
+// (bucket is private, same as professional-documents).
+export async function fetchVisitPhotos(professionalId: string, bookingId: string): Promise<VisitPhoto[]> {
+  const prefix = `${professionalId}/${bookingId}`;
+  const { data: files, error } = await supabase.storage.from("visit-photos").list(prefix);
+  if (error) throw error;
+  if (!files || files.length === 0) return [];
+
+  const paths = files.map((f) => `${prefix}/${f.name}`);
+  const { data: signed, error: signError } = await supabase.storage
+    .from("visit-photos")
+    .createSignedUrls(paths, 60 * 10);
+  if (signError) throw signError;
+
+  return signed
+    .filter((s): s is typeof s & { signedUrl: string } => Boolean(s.signedUrl))
+    .map((s) => ({ path: s.path ?? "", url: s.signedUrl }));
+}
+
 export async function completeVisit(bookingId: string, handoffNote: string): Promise<void> {
   const { error } = await supabase
     .from("bookings")

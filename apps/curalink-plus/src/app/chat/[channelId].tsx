@@ -72,6 +72,12 @@ export default function ChatRoomScreen() {
       alignItems: "center",
       justifyContent: "center",
     },
+    errorText: {
+      fontSize: 11.5,
+      color: colors.error,
+      paddingHorizontal: 20,
+      paddingTop: 6,
+    },
         }),
       [colors],
     );
@@ -82,6 +88,7 @@ export default function ChatRoomScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const { data: messages } = useQuery({
     queryKey: ["chatMessages", channelId],
@@ -106,10 +113,14 @@ export default function ChatRoomScreen() {
   async function handleSend() {
     if (!userId || !draft.trim()) return;
     setIsSending(true);
+    setSendError(null);
     const body = draft.trim();
     setDraft("");
     try {
       await sendMessage(channelId, userId, body);
+    } catch {
+      setDraft(body);
+      setSendError("Message didn't send. Check your connection and try again.");
     } finally {
       setIsSending(false);
     }
@@ -154,13 +165,18 @@ export default function ChatRoomScreen() {
         )}
       </ScrollView>
 
+      {sendError ? <Text style={styles.errorText}>{sendError}</Text> : null}
+
       <View style={styles.composer}>
         <TextInput
           style={styles.input}
           placeholder="Message..."
           placeholderTextColor={colors.muted}
           value={draft}
-          onChangeText={setDraft}
+          onChangeText={(text) => {
+            setDraft(text);
+            if (sendError) setSendError(null);
+          }}
           multiline
         />
         <Pressable style={styles.sendButton} disabled={isSending || !draft.trim()} onPress={() => void handleSend()}>

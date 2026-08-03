@@ -51,6 +51,7 @@ export default function CuraAssistantScreen() {
         emptyBody: { fontSize: 12.5, color: colors.muted2, textAlign: "center", lineHeight: 18 },
         typingBubble: { flexDirection: "row", gap: 4 },
         typingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.muted2 },
+        errorText: { fontSize: 11.5, color: colors.error, paddingHorizontal: 20, paddingTop: 6 },
         composer: {
           flexDirection: "row",
           alignItems: "flex-end",
@@ -83,6 +84,7 @@ export default function CuraAssistantScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const { data: conversation } = useQuery({
     queryKey: ["assistantConversation", profileId],
@@ -113,12 +115,16 @@ export default function CuraAssistantScreen() {
   }, [conversationId, queryClient]);
 
   async function handleSend(text: string) {
-    if (!conversationId || !text.trim() || isSending) return;
+    const body = text.trim();
+    if (!conversationId || !body || isSending) return;
     setIsSending(true);
+    setSendError(null);
     setDraft("");
     try {
-      await sendAssistantMessage(conversationId, text.trim());
+      await sendAssistantMessage(conversationId, body);
     } catch {
+      setDraft(body);
+      setSendError("Message didn't send. Check your connection and try again.");
       setIsSending(false);
     }
   }
@@ -175,6 +181,8 @@ export default function CuraAssistantScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      {sendError ? <Text style={styles.errorText}>{sendError}</Text> : null}
 
       <View style={styles.promptsRow}>
         {quickPrompts.map((prompt) => (

@@ -7,6 +7,15 @@ import { registerPushToken } from "@curalink/api-client";
 // which is mobile-only) that hasn't been done -- skip cleanly there rather
 // than crash. This project's primary dev/test environment is Expo web (see
 // memory), so this guard matters in practice, not just in theory.
+// Read-only check (no prompt) for whether push is already granted on this
+// device -- lets the UI show accurate state on mount instead of assuming
+// "off" every time the screen remounts, regardless of prior registration.
+export async function isPushAlreadyEnabled(): Promise<boolean> {
+  if (Platform.OS === "web" || !Device.isDevice) return false;
+  const { status } = await Notifications.getPermissionsAsync();
+  return status === "granted";
+}
+
 export async function registerForPushNotificationsAsync(profileId: string): Promise<string | null> {
   if (Platform.OS === "web" || !Device.isDevice) return null;
 

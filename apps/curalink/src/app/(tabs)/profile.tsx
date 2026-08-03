@@ -27,7 +27,7 @@ import {
 } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { fetchFamilyMembers, signOut, useSessionStore } from "@curalink/api-client";
-import { Button, Card, ErrorState, Skeleton, curalinkFonts, useTheme } from "@curalink/ui";
+import { Button, Card, ErrorState, Skeleton, confirmAction, curalinkFonts, useTheme } from "@curalink/ui";
 
 
 const relationEmoji: Record<string, string> = {
@@ -271,7 +271,14 @@ export default function ProfileScreen() {
         label="Sign out"
         variant="destructive"
         icon={<LogOut size={16} color={colors.error} />}
-        onPress={() => void signOut()}
+        onPress={() =>
+          confirmAction({
+            title: "Sign out?",
+            message: "You'll need to sign in again to access your account.",
+            confirmLabel: "Sign out",
+            onConfirm: () => void signOut(),
+          })
+        }
       />
     </ScrollView>
   );

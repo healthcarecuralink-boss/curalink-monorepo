@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bell, MessageCircle, Siren, Tag } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { fetchNotificationPreferences, updateNotificationPreferences, useSessionStore } from "@curalink/api-client";
 import { Card, curalinkFonts, useTheme } from "@curalink/ui";
-import { registerForPushNotificationsAsync } from "../utils/pushNotifications";
+import { isPushAlreadyEnabled, registerForPushNotificationsAsync } from "../utils/pushNotifications";
 
 const rows = [
   { key: "visit_updates" as const, label: "Visit & booking updates", description: "Status changes, arrival, completion", Icon: Bell },
@@ -48,6 +48,10 @@ export default function NotificationPreferencesScreen() {
   const queryClient = useQueryClient();
   const [isRegistering, setIsRegistering] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    void isPushAlreadyEnabled().then(setPushEnabled);
+  }, []);
 
   const { data: prefs } = useQuery({
     queryKey: ["notificationPreferences", profileId],

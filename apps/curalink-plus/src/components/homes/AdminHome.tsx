@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   AlertTriangle,
   BarChart3,
+  Beaker,
   ChevronRight,
   Map,
   Megaphone,
@@ -250,6 +251,12 @@ export function AdminHome() {
       <Pressable style={styles.complianceLink} onPress={() => router.push("/compliance")}>
         <ShieldCheck size={18} color={accent} strokeWidth={1.8} />
         <Text style={styles.complianceLinkLabel}>Compliance</Text>
+        <ChevronRight size={16} color={colors.muted} />
+      </Pressable>
+
+      <Pressable style={styles.complianceLink} onPress={() => router.push("/lab-orders")}>
+        <Beaker size={18} color={accent} strokeWidth={1.8} />
+        <Text style={styles.complianceLinkLabel}>Lab orders</Text>
         <ChevronRight size={16} color={colors.muted} />
       </Pressable>
 

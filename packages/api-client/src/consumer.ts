@@ -93,6 +93,15 @@ export async function fetchLabOrders(consumerId: string): Promise<LabOrder[]> {
   return data;
 }
 
+// lab_orders.file_url stores a storage path (lab-reports bucket, private),
+// not a directly-openable URL -- sign it on demand, same pattern as
+// fetchInsuranceDocumentUrl.
+export async function fetchLabReportUrl(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage.from("lab-reports").createSignedUrl(path, 60 * 10);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 export async function createLabOrder(order: LabOrderInsert): Promise<LabOrder> {
   const { data, error } = await supabase.from("lab_orders").insert(order).select().single();
   if (error) throw error;
@@ -137,7 +146,7 @@ export async function fetchActiveBooking(consumerId: string): Promise<Booking | 
     .from("bookings")
     .select("*")
     .eq("consumer_id", consumerId)
-    .in("status", ["confirmed", "en_route", "in_progress"])
+    .in("status", ["pending", "confirmed", "en_route", "in_progress"])
     .order("scheduled_at", { ascending: true })
     .limit(1)
     .maybeSingle();

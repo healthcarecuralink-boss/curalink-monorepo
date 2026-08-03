@@ -52,6 +52,7 @@ export {
   createAddress,
   fetchLabOrders,
   createLabOrder,
+  fetchLabReportUrl,
   fetchProviderProfile,
   fetchMedicalTeam,
   fetchServices,
@@ -103,6 +104,8 @@ export {
   acceptJob,
   updateBookingStatus,
   updateVisitFields,
+  uploadVisitPhoto,
+  fetchVisitPhotos,
   completeVisit,
   fetchCompletedBookingsSince,
   fetchPayoutMethods,
@@ -118,7 +121,7 @@ export {
   fetchMyTeamInvitations,
   respondToTeamInvitation,
 } from "./professional";
-export type { JobDetail, VisitFieldsPatch, IncomingInvitation } from "./professional";
+export type { JobDetail, VisitFieldsPatch, IncomingInvitation, VisitPhoto } from "./professional";
 
 export {
   fetchConsumerPharmacyOrders,
@@ -172,6 +175,9 @@ export {
   reassignAmbulanceRequest,
   fetchEscalatedBookings,
   fetchEscalatedAmbulanceRequests,
+  fetchPendingLabOrders,
+  fetchFulfilledLabOrders,
+  uploadLabReport,
 } from "./admin";
 export type { VerifiedProfessional, SentInvitation, TeamMemberDetail, RosterEntry } from "./admin";
 

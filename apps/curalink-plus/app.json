@@ -40,6 +40,13 @@
           "imageWidth": 76
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "CuraLinkPlus uses your camera to attach photos during a home visit.",
+          "photosPermission": "CuraLinkPlus uses your photo library to attach photos during a home visit."
+        }
+      ],
       "@sentry/react-native"
     ]
   }

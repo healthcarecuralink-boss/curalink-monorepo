@@ -1,9 +1,17 @@
 import { useState, useMemo } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
 import { ArrowLeft, Camera, Check } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { fetchJobDetail, updateVisitFields, type Json } from "@curalink/api-client";
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  fetchJobDetail,
+  fetchVisitPhotos,
+  updateVisitFields,
+  uploadVisitPhoto,
+  useSessionStore,
+  type Json,
+} from "@curalink/api-client";
 import { Button, TextField, curalinkPlusFonts, useTheme } from "@curalink/ui";
 
 const tabs = ["Vitals", "Notes", "Medications", "Labs", "Photos"] as const;
@@ -58,6 +66,8 @@ export default function VisitInProgressScreen() {
     },
     photoTileText: { fontSize: 11, color: colors.muted, textAlign: "center", paddingHorizontal: 10 },
     photoNote: { fontSize: 11, color: colors.muted, textAlign: "center" },
+    photoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center" },
+    photoThumb: { width: 90, height: 90, borderRadius: 12, backgroundColor: colors.surface },
     savedBanner: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "center" },
     savedText: { fontSize: 12, fontWeight: "600", color: colors.primary },
     footer: { padding: 20, borderTopWidth: 1, borderTopColor: colors.border, gap: 10 },
@@ -67,6 +77,8 @@ export default function VisitInProgressScreen() {
     );
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const session = useSessionStore((s) => s.session);
+  const professionalId = session?.user.id;
   const [tab, setTab] = useState<Tab>("Vitals");
   const [savedTab, setSavedTab] = useState<Tab | null>(null);
 
@@ -76,12 +88,48 @@ export default function VisitInProgressScreen() {
     enabled: Boolean(id),
   });
 
+  const {
+    data: photos,
+    isLoading: photosLoading,
+    refetch: refetchPhotos,
+  } = useQuery({
+    queryKey: ["visitPhotos", professionalId, id],
+    queryFn: () => fetchVisitPhotos(professionalId as string, id),
+    enabled: Boolean(professionalId) && Boolean(id) && tab === "Photos",
+  });
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+
   const [vitals, setVitals] = useState<VitalsForm>({ bp: "", hr: "", temp: "", spo2: "", glucose: "" });
   const [notes, setNotes] = useState("");
   const [medName, setMedName] = useState("");
   const [meds, setMeds] = useState<string[]>([]);
   const [labNote, setLabNote] = useState("");
-  const [photosNoted, setPhotosNoted] = useState(0);
+
+  async function handleAddPhoto() {
+    if (!professionalId) return;
+    setPhotoError(null);
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    const result = permission.granted
+      ? await ImagePicker.launchCameraAsync({ quality: 0.7 })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+
+    setIsUploadingPhoto(true);
+    try {
+      await uploadVisitPhoto(professionalId, id, {
+        uri: asset.uri,
+        name: asset.fileName ?? `photo-${Date.now()}.jpg`,
+        mimeType: asset.mimeType,
+      });
+      await refetchPhotos();
+    } catch {
+      setPhotoError("Couldn't upload that photo. Check your connection and try again.");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
 
   async function saveVitals() {
     await updateVisitFields(id, { vitals: vitals as unknown as Json });
@@ -172,14 +220,28 @@ export default function VisitInProgressScreen() {
 
         {tab === "Photos" ? (
           <View style={{ gap: 14, alignItems: "center" }}>
-            <Pressable style={styles.photoTile} onPress={() => setPhotosNoted((n) => n + 1)}>
-              <Camera size={24} color={colors.muted} strokeWidth={1.6} />
-              <Text style={styles.photoTileText}>Tap to attach a photo</Text>
+            <Pressable style={styles.photoTile} disabled={isUploadingPhoto} onPress={() => void handleAddPhoto()}>
+              {isUploadingPhoto ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <>
+                  <Camera size={24} color={colors.muted} strokeWidth={1.6} />
+                  <Text style={styles.photoTileText}>Tap to attach a photo</Text>
+                </>
+              )}
             </Pressable>
-            <Text style={styles.photoNote}>
-              {photosNoted} photo{photosNoted === 1 ? "" : "s"} noted (real camera-roll upload lands with the profile
-              documents work)
-            </Text>
+            {photoError ? <Text style={[styles.photoNote, { color: colors.error }]}>{photoError}</Text> : null}
+            {photosLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : photos && photos.length > 0 ? (
+              <View style={styles.photoGrid}>
+                {photos.map((photo) => (
+                  <Image key={photo.path} source={{ uri: photo.url }} style={styles.photoThumb} />
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.photoNote}>No photos attached yet</Text>
+            )}
           </View>
         ) : null}
 

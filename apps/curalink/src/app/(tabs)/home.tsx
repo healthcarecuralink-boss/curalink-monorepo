@@ -14,7 +14,7 @@ import {
   Zap,
 } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { fetchActiveBooking, fetchBookAgain, fetchServices, useSessionStore } from "@curalink/api-client";
+import { fetchActiveBooking, fetchAddresses, fetchBookAgain, fetchServices, useSessionStore } from "@curalink/api-client";
 import { Card, ErrorState, Skeleton, curalinkCategoryAccents, curalinkFonts, useTheme } from "@curalink/ui";
 
 function getGreeting(): string {
@@ -214,6 +214,9 @@ export default function HomeScreen() {
       height: 8,
       borderRadius: 4,
       backgroundColor: "#00E392",
+    },
+    pendingDot: {
+      backgroundColor: "#FFB347",
     },
     activeBadgeText: {
       fontSize: 11,
@@ -415,15 +418,25 @@ export default function HomeScreen() {
     data: bookAgain,
     isLoading: bookAgainLoading,
     isError: bookAgainError,
+    refetch: refetchBookAgain,
   } = useQuery({
     queryKey: ["bookAgain", userId],
     queryFn: () => fetchBookAgain(userId as string),
+    enabled: Boolean(userId),
+  });
+  const { data: addresses } = useQuery({
+    queryKey: ["addresses", userId],
+    queryFn: () => fetchAddresses(userId as string),
     enabled: Boolean(userId),
   });
 
   const isLoading = servicesLoading || activeLoading || bookAgainLoading;
   const isError = servicesError || activeError || bookAgainError;
   const firstName = profile?.full_name?.split(" ")[0] ?? "there";
+  const defaultAddress = addresses?.[0];
+  const locationLabel = defaultAddress
+    ? `${defaultAddress.neighborhood ?? defaultAddress.line1}, ${defaultAddress.city}`
+    : "Set your location";
 
   if (isError) {
     return (
@@ -432,6 +445,7 @@ export default function HomeScreen() {
           onRetry={() => {
             void refetchServices();
             void refetchActive();
+            void refetchBookAgain();
           }}
         />
       </ScrollView>
@@ -456,9 +470,9 @@ export default function HomeScreen() {
       <View style={styles.headerRow}>
         <View>
           <Text style={styles.greeting}>{getGreeting()}, {firstName}</Text>
-          <Pressable style={styles.locationRow}>
+          <Pressable style={styles.locationRow} onPress={() => router.push("/location-setup")}>
             <MapPin size={13} color={colors.primary} strokeWidth={2} />
-            <Text style={styles.locationText}>Jubilee Hills, Hyderabad</Text>
+            <Text style={styles.locationText}>{locationLabel}</Text>
           </Pressable>
         </View>
         <View style={styles.headerButtons}>
@@ -495,12 +509,14 @@ export default function HomeScreen() {
       {activeBooking ? (
         <Pressable style={styles.activeCard} onPress={() => router.push(`/bookings/${activeBooking.id}`)}>
           <View style={styles.activeBadgeRow}>
-            <View style={styles.liveDot} />
-            <Text style={styles.activeBadgeText}>LIVE VISIT</Text>
+            <View style={[styles.liveDot, activeBooking.status === "pending" && styles.pendingDot]} />
+            <Text style={styles.activeBadgeText}>{activeBooking.status === "pending" ? "FINDING A PRO" : "LIVE VISIT"}</Text>
           </View>
-          <Text style={styles.activeService}>Your visit is on the way</Text>
+          <Text style={styles.activeService}>
+            {activeBooking.status === "pending" ? "Looking for a nearby professional..." : "Your visit is on the way"}
+          </Text>
           <View style={styles.trackPill}>
-            <Text style={styles.trackPillText}>Track →</Text>
+            <Text style={styles.trackPillText}>{activeBooking.status === "pending" ? "View →" : "Track →"}</Text>
           </View>
         </Pressable>
       ) : (
@@ -560,24 +576,29 @@ export default function HomeScreen() {
           </View>
           <View style={{ gap: 10 }}>
             {bookAgain.map((card) => (
-              <Card key={card.booking.id} style={styles.providerCard}>
-                <View style={styles.providerAvatar}>
-                  <Text style={styles.providerInitials}>
-                    {card.providerName
-                      .split(" ")
-                      .map((w) => w[0])
-                      .slice(0, 2)
-                      .join("")}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.providerName}>{card.providerName}</Text>
-                  <Text style={styles.providerMeta}>{card.serviceName}</Text>
-                </View>
-                <View style={styles.ratingPill}>
-                  <Text style={styles.ratingText}>★ {card.providerRating.toFixed(1)}</Text>
-                </View>
-              </Card>
+              <Pressable
+                key={card.booking.id}
+                onPress={() => router.push({ pathname: "/booking/new", params: { serviceId: card.booking.service_id } })}
+              >
+                <Card style={styles.providerCard}>
+                  <View style={styles.providerAvatar}>
+                    <Text style={styles.providerInitials}>
+                      {card.providerName
+                        .split(" ")
+                        .map((w) => w[0])
+                        .slice(0, 2)
+                        .join("")}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.providerName}>{card.providerName}</Text>
+                    <Text style={styles.providerMeta}>{card.serviceName}</Text>
+                  </View>
+                  <View style={styles.ratingPill}>
+                    <Text style={styles.ratingText}>★ {card.providerRating.toFixed(1)}</Text>
+                  </View>
+                </Card>
+              </Pressable>
             ))}
           </View>
         </>

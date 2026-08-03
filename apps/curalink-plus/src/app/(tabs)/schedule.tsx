@@ -112,6 +112,14 @@ export default function ScheduleScreen() {
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
+
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  function isValidDate(value: string): boolean {
+    if (!DATE_RE.test(value)) return false;
+    const d = new Date(`${value}T00:00:00`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+  }
 
   function toggleDay(index: number) {
     setDays((prev) => prev.map((d, i) => (i === index ? !d : d)));
@@ -136,9 +144,20 @@ export default function ScheduleScreen() {
 
   async function handleRequestTimeOff() {
     if (!userId || !startDate.trim() || !endDate.trim()) return;
+    setDateError(null);
+    const start = startDate.trim();
+    const end = endDate.trim();
+    if (!isValidDate(start) || !isValidDate(end)) {
+      setDateError("Enter dates as YYYY-MM-DD, e.g. 2026-08-15.");
+      return;
+    }
+    if (start > end) {
+      setDateError("Start date must be on or before the end date.");
+      return;
+    }
     setIsRequesting(true);
     try {
-      await requestTimeOff({ professional_id: userId, start_date: startDate.trim(), end_date: endDate.trim(), reason: reason || null });
+      await requestTimeOff({ professional_id: userId, start_date: start, end_date: end, reason: reason || null });
       setStartDate("");
       setEndDate("");
       setReason("");
@@ -203,10 +222,27 @@ export default function ScheduleScreen() {
       <Card style={{ gap: 10 }}>
         <View style={styles.dateRow}>
           <View style={styles.dateField}>
-            <TextField label="Start date" placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
+            <TextField
+              label="Start date"
+              placeholder="YYYY-MM-DD"
+              value={startDate}
+              onChangeText={(v) => {
+                setStartDate(v);
+                if (dateError) setDateError(null);
+              }}
+            />
           </View>
           <View style={styles.dateField}>
-            <TextField label="End date" placeholder="YYYY-MM-DD" value={endDate} onChangeText={setEndDate} />
+            <TextField
+              label="End date"
+              placeholder="YYYY-MM-DD"
+              value={endDate}
+              onChangeText={(v) => {
+                setEndDate(v);
+                if (dateError) setDateError(null);
+              }}
+              error={dateError ?? undefined}
+            />
           </View>
         </View>
         <TextField label="Reason (optional)" value={reason} onChangeText={setReason} />

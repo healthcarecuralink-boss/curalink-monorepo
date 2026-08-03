@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Beaker, Check, FileText } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { createLabOrder, fetchFamilyMembers, fetchLabOrders, useSessionStore } from "@curalink/api-client";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { createLabOrder, fetchFamilyMembers, fetchLabOrders, fetchLabReportUrl, useSessionStore } from "@curalink/api-client";
 import { Button, Card, EmptyState, Skeleton, StatusPill, curalinkFonts, curalinkStatusPillColors, useTheme } from "@curalink/ui";
 
 
@@ -93,6 +93,11 @@ export default function LabOrdersScreen() {
     setSelectedTests((prev) => (prev.includes(test) ? prev.filter((t) => t !== test) : [...prev, test]));
   }
 
+  async function handleViewReport(path: string) {
+    const url = await fetchLabReportUrl(path);
+    if (url) void Linking.openURL(url);
+  }
+
   async function handleBook() {
     if (!consumerId || selectedTests.length === 0) return;
     setIsBooking(true);
@@ -178,10 +183,10 @@ export default function LabOrdersScreen() {
                 <Text style={styles.orderTests}>{order.tests.join(", ")}</Text>
                 <Text style={styles.orderMeta}>{new Date(order.created_at).toLocaleDateString("en-IN")}</Text>
                 {order.file_url ? (
-                  <View style={styles.reportRow}>
+                  <Pressable style={styles.reportRow} onPress={() => void handleViewReport(order.file_url as string)}>
                     <FileText size={13} color={colors.primary} strokeWidth={1.8} />
-                    <Text style={styles.reportLabel}>Report available</Text>
-                  </View>
+                    <Text style={styles.reportLabel}>Report available — tap to view</Text>
+                  </Pressable>
                 ) : (
                   <Text style={styles.pendingNote}>Results appear here once a lab visits and uploads your report.</Text>
                 )}

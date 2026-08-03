@@ -77,6 +77,7 @@ export default function AmbulanceScreen() {
     },
     requestTitle: { fontFamily: curalinkFonts.headingSemibold, fontSize: 13.5, color: colors.ink },
     requestMeta: { fontSize: 11.5, color: colors.muted2, marginTop: 2 },
+    errorText: { fontSize: 12.5, color: colors.error, textAlign: "center" },
         }),
       [colors],
     );
@@ -90,6 +91,7 @@ export default function AmbulanceScreen() {
   const [hospital, setHospital] = useState("");
   const [newAddressLine, setNewAddressLine] = useState("");
   const [isRequesting, setIsRequesting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { data: addresses } = useQuery({
     queryKey: ["addresses", consumerId],
@@ -105,6 +107,7 @@ export default function AmbulanceScreen() {
   async function handleRequest() {
     if (!consumerId) return;
     setIsRequesting(true);
+    setSubmitError(null);
     try {
       let pickupAddressId = addresses?.[0]?.id;
       if (!pickupAddressId && newAddressLine.trim()) {
@@ -125,6 +128,8 @@ export default function AmbulanceScreen() {
       });
       void queryClient.invalidateQueries({ queryKey: ["consumerAmbulanceRequests"] });
       router.replace(`/ambulance/${request.id}`);
+    } catch {
+      setSubmitError("Couldn't send your request. Check your connection and try again.");
     } finally {
       setIsRequesting(false);
     }
@@ -180,6 +185,8 @@ export default function AmbulanceScreen() {
             </Text>
           </View>
         )}
+
+        {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
         <Button
           label={isRequesting ? "Requesting..." : "Request ambulance now"}

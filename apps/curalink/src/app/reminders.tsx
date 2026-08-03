@@ -53,6 +53,7 @@ export default function RemindersScreen() {
         reminderRow: { flexDirection: "row", alignItems: "center", gap: 10 },
         reminderTitle: { fontSize: 13.5, fontWeight: "700", color: colors.ink },
         reminderMeta: { fontSize: 11.5, color: colors.muted2, marginTop: 2 },
+        reminderLink: { fontSize: 11.5, color: colors.primary, marginTop: 2, fontWeight: "600" },
       }),
     [colors],
   );
@@ -168,18 +169,28 @@ export default function RemindersScreen() {
         <View style={{ gap: 8 }}>
           {reminders
             .filter((r) => !r.is_sent)
-            .map((reminder) => (
+            .map((reminder) => {
+              const linkedBooking = reminder.booking_id
+                ? upcomingBookings?.find((b) => b.id === reminder.booking_id)
+                : undefined;
+              return (
               <Card key={reminder.id} style={styles.reminderRow}>
                 <AlarmClock size={18} color={colors.primary} strokeWidth={1.8} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.reminderTitle}>{reminder.title}</Text>
                   <Text style={styles.reminderMeta}>{new Date(reminder.remind_at).toLocaleString("en-IN")}</Text>
+                  {linkedBooking ? (
+                    <Text style={styles.reminderLink}>
+                      Linked to visit on {new Date(linkedBooking.scheduled_at).toLocaleDateString("en-IN")}
+                    </Text>
+                  ) : null}
                 </View>
                 <Pressable onPress={() => void handleDelete(reminder.id)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Delete reminder">
                   <Trash2 size={16} color={colors.error} strokeWidth={1.8} />
                 </Pressable>
               </Card>
-            ))}
+              );
+            })}
         </View>
       )}
     </ScrollView>

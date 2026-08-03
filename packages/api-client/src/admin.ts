@@ -8,6 +8,7 @@ type PayoutRecord = Database["public"]["Tables"]["payout_records"]["Row"];
 type TeamMember = Database["public"]["Tables"]["team_members"]["Row"];
 type TeamInvitation = Database["public"]["Tables"]["team_invitations"]["Row"];
 type AmbulanceRequest = Database["public"]["Tables"]["ambulance_requests"]["Row"];
+type LabOrder = Database["public"]["Tables"]["lab_orders"]["Row"];
 
 export async function createTeam(adminId: string, name: string): Promise<Database["public"]["Tables"]["teams"]["Row"]> {
   const { data, error } = await supabase.from("teams").insert({ admin_id: adminId, name }).select().single();
@@ -302,4 +303,57 @@ export async function fetchAmbulanceCompletedCounts(partnerIds: string[]): Promi
     counts[row.ambulance_partner_id] = (counts[row.ambulance_partner_id] ?? 0) + 1;
   }
   return counts;
+}
+
+// Manual lab-report fulfillment (README: any approved admin can fulfill any
+// consumer's order -- matches an outsourced-lab-partner model where the
+// admin uploads a report they received externally, not a dedicated
+// in-app "lab technician" role). Platform-wide, not team-scoped -- lab
+// orders have no team/professional linkage to scope by.
+export async function fetchPendingLabOrders(): Promise<LabOrder[]> {
+  const { data, error } = await supabase
+    .from("lab_orders")
+    .select("*")
+    .is("file_url", null)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchFulfilledLabOrders(): Promise<LabOrder[]> {
+  const { data, error } = await supabase
+    .from("lab_orders")
+    .select("*")
+    .not("file_url", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(25);
+  if (error) throw error;
+  return data;
+}
+
+// Uploads to the lab-reports bucket under the *consumer's* id (not the
+// admin's) so the consumer's own RLS grant lets them read it back later --
+// mirrors the path convention insurance-documents/professional-documents
+// use, just keyed by the reader instead of the uploader.
+export async function uploadLabReport(
+  labOrderId: string,
+  consumerId: string,
+  file: { uri: string; name: string; mimeType?: string | null },
+): Promise<void> {
+  const response = await fetch(file.uri);
+  const blob = await response.blob();
+  const extMatch = /\.([a-zA-Z0-9]+)$/.exec(file.name);
+  const ext = extMatch?.[1]?.toLowerCase() ?? "pdf";
+  const path = `${consumerId}/${labOrderId}/${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("lab-reports")
+    .upload(path, blob, {
+      contentType: file.mimeType ?? blob.type ?? "application/octet-stream",
+      upsert: false,
+    });
+  if (uploadError) throw uploadError;
+
+  const { error } = await supabase.from("lab_orders").update({ file_url: path, status: "completed" }).eq("id", labOrderId);
+  if (error) throw error;
 }

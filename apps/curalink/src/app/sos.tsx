@@ -2,9 +2,9 @@ import { useState, useMemo } from "react";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Phone, Siren } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { createAmbulanceRequest, fetchAddresses, fetchEmergencyContacts, useSessionStore } from "@curalink/api-client";
-import { Button, Card, curalinkFonts, useTheme } from "@curalink/ui";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { createAddress, createAmbulanceRequest, fetchAddresses, fetchEmergencyContacts, useSessionStore } from "@curalink/api-client";
+import { Button, Card, curalinkFonts, TextField, useTheme } from "@curalink/ui";
 
 
 export default function SosScreen() {
@@ -30,15 +30,20 @@ export default function SosScreen() {
     headline: { fontFamily: curalinkFonts.heading, fontSize: 19, color: colors.ink, textAlign: "center" },
     subtitle: { fontSize: 13, color: colors.muted2, textAlign: "center", lineHeight: 19 },
     sectionTitle: { fontFamily: curalinkFonts.headingSemibold, fontSize: 13.5, color: colors.ink },
+    fieldLabel: { fontSize: 12.5, fontWeight: "600", color: colors.muted, marginBottom: 8 },
+    addressLine: { fontSize: 13, color: colors.ink2, marginTop: 2 },
     contactRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
     contactName: { flex: 1, fontSize: 12.5, color: colors.ink },
     contactPhone: { fontSize: 12.5, color: colors.muted2 },
+    errorText: { fontSize: 12.5, color: colors.error, textAlign: "center" },
         }),
       [colors],
     );
   const session = useSessionStore((s) => s.session);
   const consumerId = session?.user.id;
   const [isRequesting, setIsRequesting] = useState(false);
+  const [newAddressLine, setNewAddressLine] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { data: addresses } = useQuery({
     queryKey: ["addresses", consumerId],
@@ -54,14 +59,26 @@ export default function SosScreen() {
   async function handleConfirm() {
     if (!consumerId) return;
     setIsRequesting(true);
+    setSubmitError(null);
     try {
+      let pickupAddressId = addresses?.[0]?.id;
+      if (!pickupAddressId && newAddressLine.trim()) {
+        const created = await createAddress({
+          owner_id: consumerId,
+          label: "Emergency pickup",
+          line1: newAddressLine,
+        });
+        pickupAddressId = created.id;
+      }
       const request = await createAmbulanceRequest({
         consumer_id: consumerId,
         type: "ALS",
         reason: "SOS emergency request",
-        pickup_address_id: addresses?.[0]?.id ?? null,
+        pickup_address_id: pickupAddressId ?? null,
       });
       router.replace(`/ambulance/${request.id}`);
+    } catch {
+      setSubmitError("Couldn't reach CuraLink. Check your connection and tap Confirm again — if this keeps failing, call your local emergency number directly.");
     } finally {
       setIsRequesting(false);
     }
@@ -85,10 +102,25 @@ export default function SosScreen() {
         <Siren size={40} color={colors.error} strokeWidth={1.6} />
       </View>
       <Text style={styles.headline}>Request an ambulance immediately</Text>
-      <Text style={styles.subtitle}>
-        We&apos;ll dispatch the nearest available ALS ambulance to{" "}
-        {addresses?.[0] ? `${addresses[0].line1}, ${addresses[0].neighborhood ?? addresses[0].city}` : "your default address"}.
-      </Text>
+      <Text style={styles.subtitle}>We&apos;ll dispatch the nearest available ALS ambulance to you.</Text>
+
+      {addresses === undefined ? null : addresses.length === 0 ? (
+        <TextField
+          label="Pickup address"
+          placeholder="Where should the ambulance come?"
+          value={newAddressLine}
+          onChangeText={setNewAddressLine}
+        />
+      ) : (
+        <View>
+          <Text style={styles.fieldLabel}>Pickup address</Text>
+          <Text style={styles.addressLine}>
+            {addresses[0]?.line1}, {addresses[0]?.neighborhood ?? addresses[0]?.city}
+          </Text>
+        </View>
+      )}
+
+      {submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
       <Button
         label={isRequesting ? "Requesting..." : "Confirm — call ambulance now"}
@@ -102,11 +134,17 @@ export default function SosScreen() {
         <Card style={{ gap: 8 }}>
           <Text style={styles.sectionTitle}>Your emergency contacts</Text>
           {emergencyContacts.map((contact) => (
-            <View key={contact.id} style={styles.contactRow}>
+            <Pressable
+              key={contact.id}
+              style={styles.contactRow}
+              onPress={() => void Linking.openURL(`tel:${contact.phone}`)}
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${contact.full_name}`}
+            >
               <Phone size={14} color={colors.muted2} strokeWidth={1.8} />
               <Text style={styles.contactName}>{contact.full_name}</Text>
               <Text style={styles.contactPhone}>{contact.phone}</Text>
-            </View>
+            </Pressable>
           ))}
         </Card>
       ) : null}

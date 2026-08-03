@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MapPin, Star, User } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { fetchProviderProfile } from "@curalink/api-client";
-import { Card, Skeleton, curalinkFonts, useTheme, type ThemeContextValue } from "@curalink/ui";
+import { Card, EmptyState, ErrorState, Skeleton, curalinkFonts, useTheme, type ThemeContextValue } from "@curalink/ui";
 
 function Row({ label, value, colors }: { label: string; value: string; colors: ThemeContextValue["colors"] }) {
   return (
@@ -49,21 +49,16 @@ export default function ProviderProfileScreen() {
 
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { data: detail } = useQuery({
+  const {
+    data: detail,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["providerProfile", id],
     queryFn: () => fetchProviderProfile(id),
     enabled: Boolean(id),
   });
-
-  if (!detail) {
-    return (
-      <View style={styles.container}>
-        <Skeleton height={140} borderRadius={18} />
-      </View>
-    );
-  }
-
-  const { profile, professionalProfile } = detail;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -79,41 +74,57 @@ export default function ProviderProfileScreen() {
         <Text style={styles.title}>Provider profile</Text>
       </View>
 
-      <Card style={styles.identityCard}>
-        <View style={styles.avatar}>
-          <User size={22} color="#EAF3EE" strokeWidth={1.8} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{profile.full_name}</Text>
-          {professionalProfile ? (
-            <View style={styles.ratingRow}>
-              <Star size={13} color={colors.star} fill={colors.star} />
-              <Text style={styles.ratingText}>
-                {professionalProfile.rating.toFixed(1)} ({professionalProfile.rating_count} reviews)
-              </Text>
+      {isLoading ? (
+        <Skeleton height={140} borderRadius={18} />
+      ) : isError ? (
+        <ErrorState onRetry={() => void refetch()} />
+      ) : !detail ? (
+        <EmptyState
+          icon={<User size={26} color={colors.muted} strokeWidth={1.6} />}
+          title="Provider not found"
+          body="This profile may have been removed or the link is out of date."
+          ctaLabel="Go back"
+          onPressCta={() => router.back()}
+        />
+      ) : (
+        <>
+          <Card style={styles.identityCard}>
+            <View style={styles.avatar}>
+              <User size={22} color="#EAF3EE" strokeWidth={1.8} />
             </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{detail.profile.full_name}</Text>
+              {detail.professionalProfile ? (
+                <View style={styles.ratingRow}>
+                  <Star size={13} color={colors.star} fill={colors.star} />
+                  <Text style={styles.ratingText}>
+                    {detail.professionalProfile.rating.toFixed(1)} ({detail.professionalProfile.rating_count} reviews)
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </Card>
+
+          {detail.professionalProfile?.bio ? (
+            <Card>
+              <Text style={styles.sectionTitle}>About</Text>
+              <Text style={styles.bodyText}>{detail.professionalProfile.bio}</Text>
+            </Card>
           ) : null}
-        </View>
-      </Card>
 
-      {professionalProfile?.bio ? (
-        <Card>
-          <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.bodyText}>{professionalProfile.bio}</Text>
-        </Card>
-      ) : null}
-
-      <Card>
-        {professionalProfile?.years_experience ? (
-          <Row label="Experience" value={`${professionalProfile.years_experience} years`} colors={colors} />
-        ) : null}
-        {professionalProfile?.service_area ? (
-          <View style={styles.areaRow}>
-            <MapPin size={14} color={colors.muted2} strokeWidth={1.8} />
-            <Text style={styles.areaText}>{professionalProfile.service_area}</Text>
-          </View>
-        ) : null}
-      </Card>
+          <Card>
+            {detail.professionalProfile?.years_experience ? (
+              <Row label="Experience" value={`${detail.professionalProfile.years_experience} years`} colors={colors} />
+            ) : null}
+            {detail.professionalProfile?.service_area ? (
+              <View style={styles.areaRow}>
+                <MapPin size={14} color={colors.muted2} strokeWidth={1.8} />
+                <Text style={styles.areaText}>{detail.professionalProfile.service_area}</Text>
+              </View>
+            ) : null}
+          </Card>
+        </>
+      )}
     </ScrollView>
   );
 }

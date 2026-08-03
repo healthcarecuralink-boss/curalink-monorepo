@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { router } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Copy, Gift, Share2, Users } from "lucide-react-native";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import * as Clipboard from "expo-clipboard";
+import { ArrowLeft, Check, Copy, Gift, Share2, Users } from "lucide-react-native";
+import { Platform, Pressable, Share, ScrollView, StyleSheet, Text, View } from "react-native";
 import { fetchMyReferralCode, fetchMyReferrals, useSessionStore } from "@curalink/api-client";
 import { Button, Card, EmptyState, Skeleton, curalinkFonts, useTheme } from "@curalink/ui";
 
@@ -31,6 +32,7 @@ export default function ReferAFriendScreen() {
         heroBody: { fontSize: 12, color: "rgba(255,255,255,0.85)", textAlign: "center", paddingHorizontal: 20 },
         codeChip: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.16)", borderRadius: 13, paddingHorizontal: 18, paddingVertical: 12 },
         codeText: { fontFamily: curalinkFonts.heading, fontSize: 22, color: "#FFFFFF", letterSpacing: 3 },
+        copiedText: { fontSize: 11.5, fontWeight: "700", color: "#FFFFFF" },
         referralRow: { flexDirection: "row", alignItems: "center", gap: 10 },
         referralMeta: { fontSize: 11.5, color: colors.muted2, marginTop: 2 },
       }),
@@ -51,23 +53,28 @@ export default function ReferAFriendScreen() {
     enabled: Boolean(profileId),
   });
 
-  function handleCopy() {
+  const [justCopied, setJustCopied] = useState(false);
+
+  async function handleCopy() {
     if (!code) return;
-    const nav = (globalThis as { navigator?: { clipboard?: { writeText: (text: string) => Promise<void> } } }).navigator;
-    if (Platform.OS === "web" && nav?.clipboard) {
-      void nav.clipboard.writeText(code);
-    }
+    await Clipboard.setStringAsync(code);
+    setJustCopied(true);
+    setTimeout(() => setJustCopied(false), 1500);
   }
 
-  function handleShare() {
+  async function handleShare() {
     if (!code) return;
     const message = `Join me on CuraLink for home healthcare in Hyderabad — use my code ${code} when you sign up!`;
-    const nav = (globalThis as { navigator?: { share?: (data: { text: string }) => Promise<void> } }).navigator;
-    if (Platform.OS === "web" && nav?.share) {
-      void nav.share({ text: message });
-    } else {
-      handleCopy();
+    if (Platform.OS === "web") {
+      const nav = (globalThis as { navigator?: { share?: (data: { text: string }) => Promise<void> } }).navigator;
+      if (nav?.share) {
+        await nav.share({ text: message });
+        return;
+      }
+      await handleCopy();
+      return;
     }
+    await Share.share({ message });
   }
 
   return (
@@ -89,14 +96,19 @@ export default function ReferAFriendScreen() {
         <Text style={styles.heroTitle}>Give 50 points, get 50 points</Text>
         <Text style={styles.heroBody}>When a friend signs up with your code, you both earn 50 loyalty points.</Text>
         {code ? (
-          <Pressable style={styles.codeChip} onPress={handleCopy}>
+          <Pressable style={styles.codeChip} onPress={() => void handleCopy()}>
             <Text style={styles.codeText}>{code}</Text>
-            <Copy size={18} color="#FFFFFF" strokeWidth={1.8} />
+            {justCopied ? (
+              <Check size={18} color="#FFFFFF" strokeWidth={1.8} />
+            ) : (
+              <Copy size={18} color="#FFFFFF" strokeWidth={1.8} />
+            )}
           </Pressable>
         ) : (
           <Skeleton height={48} width={160} borderRadius={13} />
         )}
-        <Button label="Share your code" variant="secondary" icon={<Share2 size={16} color={colors.ink} />} onPress={handleShare} />
+        {justCopied ? <Text style={styles.copiedText}>Copied!</Text> : null}
+        <Button label="Share your code" variant="secondary" icon={<Share2 size={16} color={colors.ink} />} onPress={() => void handleShare()} />
       </Card>
 
       <Text style={styles.sectionTitle}>Friends you&apos;ve referred</Text>

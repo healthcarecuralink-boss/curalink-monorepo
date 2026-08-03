@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Banknote, CreditCard, Smartphone, Wallet as WalletIcon, Zap } from "lucide-react-native";
+import { ArrowLeft, Banknote, CreditCard, SearchX, Smartphone, Wallet as WalletIcon, Zap } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   createAddress,
@@ -11,7 +11,7 @@ import {
   fetchServiceById,
   useSessionStore,
 } from "@curalink/api-client";
-import { Button, Card, Skeleton, StatusPill, TextField, curalinkFonts, useTheme } from "@curalink/ui";
+import { Button, Card, EmptyState, Skeleton, StatusPill, TextField, curalinkFonts, useTheme } from "@curalink/ui";
 
 // Razorpay isn't wired yet (pending business KYC) -- "Pay after care" is the
 // only live option. UPI/Card/Wallet stay visible-but-disabled with a "Coming
@@ -113,6 +113,7 @@ export default function NewBookingScreen() {
         payMethodName: { fontSize: 13.5, fontWeight: "700", color: colors.ink },
         payMethodSub: { fontSize: 11.5, color: colors.muted2, marginTop: 1 },
         payNote: { fontSize: 11.5, color: colors.muted2, textAlign: "center", marginTop: 2 },
+        errorText: { fontSize: 12.5, color: colors.error, textAlign: "center" },
       }),
     [colors],
   );
@@ -131,6 +132,7 @@ export default function NewBookingScreen() {
   const [newAddressLine, setNewAddressLine] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<(typeof PAYMENT_METHODS)[number]["id"]>("cash");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { data: service } = useQuery({
     queryKey: ["service", serviceId],
@@ -171,6 +173,7 @@ export default function NewBookingScreen() {
   async function handleConfirm() {
     if (!consumerId || !service || !patientId || !scheduleKey) return;
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       let finalAddressId = addressId;
       if (!finalAddressId && newAddressLine.trim()) {
@@ -190,15 +193,26 @@ export default function NewBookingScreen() {
         is_express: selectedPreset?.isExpress ?? false,
       });
       router.replace({ pathname: "/booking/success", params: { bookingId: booking.id } });
+    } catch {
+      setSubmitError("Couldn't send your booking. Check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  if (!service) {
+  if (service === undefined && serviceId) {
     return (
       <View style={styles.container}>
         <Skeleton height={140} borderRadius={18} />
+      </View>
+    );
+  }
+
+  if (!service) {
+    return (
+      <View style={[styles.container, styles.content]}>
+        <EmptyState icon={<SearchX size={26} color={colors.primary} strokeWidth={1.6} />} title="Service not found" />
+        <Button label="Back to services" onPress={() => router.replace("/(tabs)/services")} />
       </View>
     );
   }
@@ -320,7 +334,11 @@ export default function NewBookingScreen() {
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Address</Text>
-            <Text style={styles.summaryValue}>{selectedAddress?.label ?? newAddressLabel}</Text>
+            <Text style={styles.summaryValue}>
+              {selectedAddress
+                ? `${selectedAddress.label} — ${selectedAddress.line1}`
+                : `${newAddressLabel} — ${newAddressLine.trim()}`}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Price</Text>
@@ -358,6 +376,8 @@ export default function NewBookingScreen() {
           <Text style={styles.payNote}>No payment is collected now — you&apos;ll pay your provider directly after the visit.</Text>
         </>
       ) : null}
+
+      {step === "summary" && submitError ? <Text style={styles.errorText}>{submitError}</Text> : null}
 
       <View style={styles.footerRow}>
         {step !== "summary" ? (

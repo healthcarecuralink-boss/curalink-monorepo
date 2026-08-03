@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, ShieldCheck } from "lucide-react-native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { updateProfessionalCredentials, useSessionStore, type ProfessionalRole } from "@curalink/api-client";
-import { Button, Card, TextField, curalinkPlusFonts, useTheme } from "@curalink/ui";
+import { Button, Card, TextField, curalinkPlusFonts, isValidBankAccountNumber, isValidIfsc, useTheme } from "@curalink/ui";
 
 
 export default function BankDetailsScreen() {
@@ -45,10 +45,24 @@ export default function BankDetailsScreen() {
   const [accountNumber, setAccountNumber] = useState("");
   const [ifsc, setIfsc] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [accountNumberError, setAccountNumberError] = useState<string | null>(null);
+  const [ifscError, setIfscError] = useState<string | null>(null);
 
   async function handleSubmit() {
     const userId = session?.user.id;
     if (!userId) return;
+    setAccountNumberError(null);
+    setIfscError(null);
+    let hasError = false;
+    if (!isValidBankAccountNumber(accountNumber)) {
+      setAccountNumberError("Enter a valid account number (9-18 digits).");
+      hasError = true;
+    }
+    if (!isValidIfsc(ifsc)) {
+      setIfscError("Enter a valid IFSC code, e.g. HDFC0001234.");
+      hasError = true;
+    }
+    if (hasError) return;
     setIsSubmitting(true);
     try {
       await updateProfessionalCredentials(userId, {
@@ -81,9 +95,23 @@ export default function BankDetailsScreen() {
           placeholder="50100223344556"
           keyboardType="number-pad"
           value={accountNumber}
-          onChangeText={setAccountNumber}
+          onChangeText={(v) => {
+            setAccountNumber(v);
+            if (accountNumberError) setAccountNumberError(null);
+          }}
+          error={accountNumberError ?? undefined}
         />
-        <TextField label="IFSC code" placeholder="HDFC0001234" autoCapitalize="characters" value={ifsc} onChangeText={setIfsc} />
+        <TextField
+          label="IFSC code"
+          placeholder="HDFC0001234"
+          autoCapitalize="characters"
+          value={ifsc}
+          onChangeText={(v) => {
+            setIfsc(v);
+            if (ifscError) setIfscError(null);
+          }}
+          error={ifscError ?? undefined}
+        />
       </View>
 
       <Card style={styles.noteCard}>

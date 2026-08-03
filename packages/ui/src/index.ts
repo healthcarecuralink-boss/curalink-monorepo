@@ -48,6 +48,8 @@ export { BottomSheet } from "./components/BottomSheet";
 export type { BottomSheetProps } from "./components/BottomSheet";
 export { BottomNav, FAB } from "./components/BottomNav";
 export type { BottomNavProps, BottomNavTab } from "./components/BottomNav";
+export { confirmAction } from "./utils/confirmAction";
+export { isValidIfsc, isValidBankAccountNumber, isValidUpiId } from "./utils/validators";
 export { LeafletMap } from "./components/LeafletMap";
 export { DEFAULT_CENTER } from "./components/LeafletMap.types";
 export type { LeafletMapProps, LeafletMarker } from "./components/LeafletMap.types";
