@@ -23,3 +23,9 @@
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
+
+# Static images and stylesheets referenced by filename (not content-hashed), so
+# cache for a day rather than marking immutable -- a swapped file should reach
+# visitors reasonably soon.
+/assets/*
+  Cache-Control: public, max-age=86400

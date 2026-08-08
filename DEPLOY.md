@@ -110,19 +110,32 @@ Worth confirming on the live domain:
 - The app shell is built from `public/index.html`, not an Expo Router
   `+html.tsx` — `+html.tsx` only applies to the `static`/`server` output modes,
   and both apps use `web.output: "single"`.
-- The marketing pages talk to a *different* Supabase project than the apps do
-  (see "Known gaps" below).
+- The marketing pages and the apps talk to the same Supabase project
+  (`fsrbfgerimqbzdxspsrf`); lead capture lands in `public.leads`.
+- Directory routes are served with a trailing slash (`/services/home-nursing/`),
+  and Netlify 301s the slashless form onto it. Internal links, `rel=canonical`
+  and `sitemap.xml` all use the trailing-slash form so no internal navigation
+  pays for a redirect — keep new links in that shape.
 
 ## Known gaps
 
-- **The websites and the apps use different Supabase projects.** The marketing
-  pages write leads to `contacts` in project `bqsstkldvojvscbutsmf`, while the
-  apps use `fsrbfgerimqbzdxspsrf`. Early-access signups therefore never reach
-  the app backend. Unify these if the lead list is meant to feed onboarding.
-- **Both apps ship the same icon.** `apps/curalink/assets/images/icon.png` and
-  `apps/curalink-plus/assets/images/icon.png` are byte-identical, so the two
-  PWAs install with the same home-screen icon and are indistinguishable once
-  installed. The generated `public/icon-*.png` inherit this.
-- **No Open Graph image.** Neither shell sets `og:image`, so links to `/app`
-  preview without a thumbnail. Add an image and an `og:image` tag to each
-  `public/index.html` when there is artwork for it.
+Nothing outstanding from the earlier list — all three previous gaps are closed:
+
+- ~~Split Supabase projects.~~ Leads now go to `public.leads` in the same
+  project the apps use (`20260724020000_marketing_leads.sql`). The table is
+  insert-only for `anon` and readable only by `is_curalink_staff()`, so the
+  public forms can submit but nobody can read the lead list back.
+- ~~Both apps ship the same icon.~~ `apps/curalink` and `apps/curalink-plus`
+  now ship distinct `icon.png`, and the generated `web/icon-*.png` differ.
+- ~~No Open Graph image.~~ Both sites ship their own `web/og-image.png` and
+  reference it from every page.
+
+Worth keeping an eye on:
+
+- **Accessible names are hand-maintained.** Every form control on both sites
+  has either an `aria-label` or a `<label for=...>`; there is no automated
+  check, so a newly added field can silently regress it.
+- **`curalinkplus.co.in/` inlines its logos as base64 in the HTML.** That page
+  is ~345 KB uncompressed (~113 KB brotli) and is served `must-revalidate`, so
+  the logo bytes are re-fetched on every visit rather than cached. Moving them
+  to files under `/assets/` would let the `/assets/*` rule cache them.
