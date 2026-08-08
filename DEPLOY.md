@@ -44,38 +44,74 @@ node scripts/serve-dist.mjs apps/curalink 4173
 Then open <http://localhost:4173/> for the site and
 <http://localhost:4173/app> for the app.
 
-## Netlify site settings
+## Publishing
 
-Create **two** sites from this repo. Build settings are configured in the
-Netlify UI rather than a `netlify.toml`, because a single repo root can only
-hold one `netlify.toml` and both sites need different builds. The routing and
-header rules live in `_redirects` / `_headers` inside each publish directory
-instead, so there is nothing to conflict.
+> **Pushing to GitHub does not deploy anything.** Neither Netlify site is
+> connected to `healthcarecuralink-boss/curalink-monorepo`. Both were created as
+> direct-upload sites: their Netlify "repo" is an internal `hgit.services-prod`
+> URL, and neither has a build command. Netlify never builds this project — it
+> only receives a `dist/` directory that you built locally. A `git push` alone
+> will leave both domains serving the previous deploy indefinitely.
 
-For each site:
+So publishing is always two steps: build locally, then upload each `dist/`.
 
-| Setting           | `curalink.co.in`                                          | `curalinkplus.co.in`                                            |
-| ----------------- | --------------------------------------------------------- | --------------------------------------------------------------- |
-| Base directory    | *(leave blank — repo root)*                                | *(leave blank — repo root)*                                      |
-| Build command     | `pnpm install --frozen-lockfile && pnpm build:web:curalink` | `pnpm install --frozen-lockfile && pnpm build:web:curalink-plus` |
-| Publish directory | `apps/curalink/dist`                                        | `apps/curalink-plus/dist`                                        |
-| Node version      | 20 or newer (`NODE_VERSION=20`)                             | same                                                              |
+```bash
+pnpm build:web
+```
 
-Base directory stays at the repo root so pnpm can resolve the workspace —
-installing from inside `apps/<app>` would not see `packages/api-client` or
-`packages/ui`.
+```bash
+netlify deploy --prod --no-build --dir=apps/curalink/dist --site=83e6bb84-a799-4ed2-b549-d14955a335e5
+```
+
+```bash
+netlify deploy --prod --no-build --dir=apps/curalink-plus/dist --site=171aab0b-ad3c-467a-93ed-c4719e9f9e4e
+```
+
+| Domain               | Netlify site name             | Site ID                                |
+| -------------------- | ----------------------------- | -------------------------------------- |
+| `curalink.co.in`     | `splendorous-tulumba-502a4d`  | `83e6bb84-a799-4ed2-b549-d14955a335e5` |
+| `curalinkplus.co.in` | `enchanting-capybara-2db625`  | `171aab0b-ad3c-467a-93ed-c4719e9f9e4e` |
+
+Run the CLI from outside the repo (or pass `--dir` as an absolute path): from
+the monorepo root it detects the pnpm workspace and stops to ask which project
+you meant, which hangs a non-interactive shell. `--no-build` is what keeps it
+from trying to infer a build for a directory that is already built.
+
+Because the sites are not built by Netlify, `EXPO_PUBLIC_*` variables are read
+from your **local** `.env` at build time, not from the Netlify UI — see below.
+
+Routing and header rules live in `_redirects` / `_headers` inside each publish
+directory, so there is no `netlify.toml` to conflict between the two sites.
+
+Still worth doing when there is time: connect both sites to the GitHub repo
+with the build commands `pnpm install --frozen-lockfile && pnpm
+build:web:curalink` / `...:curalink-plus`, publish directory
+`apps/<app>/dist`, base directory left blank (the repo root, so pnpm can
+resolve `packages/api-client` and `packages/ui`), and `NODE_VERSION=20`. That
+would make `main` the source of truth instead of whatever was last uploaded
+from someone's laptop.
 
 ### Environment variables
 
-Set these per site (Site configuration → Environment variables). They are
-inlined into the bundle at build time, so a change requires a redeploy.
+Because `pnpm build:web` runs on your machine, these are read from the local
+`.env` / `.env.local` in each app directory — **not** from the Netlify UI.
+Setting them in Netlify has no effect while the sites are direct-upload. They
+are inlined into the bundle at build time, so changing one means rebuilding and
+re-uploading, not just restarting anything.
 
 ```
 EXPO_PUBLIC_SUPABASE_URL
 EXPO_PUBLIC_SUPABASE_ANON_KEY
 EXPO_PUBLIC_SENTRY_DSN
+EXPO_PUBLIC_MSG91_WIDGET_ID
+EXPO_PUBLIC_MSG91_WIDGET_AUTH_TOKEN
 SENTRY_DISABLE_AUTO_UPLOAD
 ```
+
+A corollary worth stating plainly: whoever deploys decides what ends up in the
+bundle. If your `.env` is stale or missing a key, the build silently ships a
+site pointing at the wrong backend. Check `pnpm lint` output — it prints the
+env files it loaded and the variables it exported.
 
 Anything prefixed `EXPO_PUBLIC_` is readable by anyone who opens the site.
 That is fine for the Supabase anon key, which is designed to be public and
