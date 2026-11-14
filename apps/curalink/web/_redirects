@@ -14,4 +14,13 @@
 # through to the shell.
 /app/*            /app/index.html   200
 
+# Services dropped in the Nov 2026 rebuild -- these were never part of the
+# real business (on-demand nurse visits and discharge recovery courses), so
+# redirect rather than 404 for anyone with an old link or search result.
+/services/doctor-consultation/*  /services/post-surgery-care/  301
+/services/lab-tests/*            /                              301
+/services/pediatric-care/*       /                              301
+/services/pet-care/*             /                              301
+/services/vaccination-at-home/*  /                              301
+
 # Apex/www is handled by Netlify's domain settings, not here.

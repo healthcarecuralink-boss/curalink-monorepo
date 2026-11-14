@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
-import { HeartPulse } from "lucide-react-native";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSessionStore } from "@curalink/api-client";
 import { curalinkFonts, useTheme } from "@curalink/ui";
 
@@ -23,8 +22,8 @@ export default function SplashScreen() {
           gap: 14,
         },
         logoRing: {
-          width: 92,
-          height: 92,
+          width: 244,
+          height: 96,
           borderRadius: 28,
           backgroundColor: "#FFFFFF",
           alignItems: "center",
@@ -33,6 +32,10 @@ export default function SplashScreen() {
         logo: {
           alignItems: "center",
           justifyContent: "center",
+        },
+        logoImage: {
+          width: 196,
+          height: 51,
         },
         wordmark: {
           fontFamily: curalinkFonts.heading,
@@ -93,10 +96,9 @@ export default function SplashScreen() {
     <Pressable style={styles.container} onPress={() => !isLoading && router.replace(session ? "/(tabs)/home" : "/auth")}>
       <Animated.View style={[styles.logoRing, { transform: [{ scale: pulse }] }]}>
         <View style={styles.logo}>
-          <HeartPulse size={46} color={colors.primary} strokeWidth={2} />
+          <Image source={require("../../assets/images/logo-light.png")} style={styles.logoImage} resizeMode="contain" accessibilityLabel="Curalink" />
         </View>
       </Animated.View>
-      <Text style={styles.wordmark}>CuraLink</Text>
       <Text style={styles.tagline}>Care, comfort, connected.</Text>
       <Text style={styles.footer}>MADE WITH CARE IN HYDERABAD</Text>
     </Pressable>

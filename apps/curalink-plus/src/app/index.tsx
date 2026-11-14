@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { router } from "expo-router";
-import { Stethoscope } from "lucide-react-native";
-import { Animated, Pressable, StyleSheet, Text } from "react-native";
+import { Animated, Image, Pressable, StyleSheet, Text } from "react-native";
 import { useSessionStore } from "@curalink/api-client";
 import { curalinkPlusFonts, useTheme } from "@curalink/ui";
 
@@ -20,8 +19,8 @@ export default function SplashScreen() {
       gap: 14,
     },
     logoBox: {
-      width: 88,
-      height: 88,
+      width: 244,
+      height: 96,
       borderRadius: 24,
       backgroundColor: "#FFFFFF",
       alignItems: "center",
@@ -29,9 +28,10 @@ export default function SplashScreen() {
     },
     wordmark: {
       fontFamily: curalinkPlusFonts.heading,
-      fontSize: 28,
+      fontSize: 22,
+      letterSpacing: 4,
       color: "#FFFFFF",
-      marginTop: 6,
+      marginTop: 2,
     },
     wordmarkLight: {
       fontFamily: curalinkPlusFonts.body,
@@ -82,11 +82,9 @@ export default function SplashScreen() {
       onPress={() => !isLoading && router.replace(session ? "/(tabs)/home" : "/login")}
     >
       <Animated.View style={[styles.logoBox, { transform: [{ scale: pulse }] }]}>
-        <Stethoscope size={40} color={colors.primary} strokeWidth={1.8} />
+        <Image source={require("../../assets/images/logo-light.png")} style={{ width: 196, height: 51 }} resizeMode="contain" accessibilityLabel="Curalink" />
       </Animated.View>
-      <Text style={styles.wordmark}>
-        CuraLink <Text style={styles.wordmarkLight}>Plus</Text>
-      </Text>
+      <Text style={styles.wordmark}>PLUS</Text>
       <Text style={styles.tagline}>Care, delivered.</Text>
       <Text style={styles.footer}>FOR CURALINK PROFESSIONALS</Text>
     </Pressable>

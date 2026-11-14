@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, router, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, Check, Stethoscope } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ArrowLeft, Check } from "lucide-react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import {
   getErrorMessage,
   sendEmailOtp,
@@ -64,7 +64,7 @@ export default function LoginScreen() {
       justifyContent: "center",
       marginBottom: 24,
     },
-    iconChip: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 18 },
+    iconChip: { width: 52, height: 52, borderRadius: 16, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center", marginBottom: 18 },
     title: { fontFamily: curalinkPlusFonts.heading, fontSize: 24, color: colors.ink },
     subtitle: { fontSize: 13.5, color: colors.muted, marginTop: 4 },
     googleButton: { marginTop: 24 },
@@ -218,8 +218,8 @@ export default function LoginScreen() {
           <ArrowLeft size={18} color={colors.ink} strokeWidth={2} />
         </Pressable>
       ) : null}
-      <View style={[styles.iconChip, { backgroundColor: accent }]}>
-        <Stethoscope size={24} color="#FFFFFF" strokeWidth={1.8} />
+      <View style={[styles.iconChip, { backgroundColor: "#FFFFFF" }]}>
+        <Image source={require("../../assets/images/mark.png")} style={{ width: 32, height: 32 }} resizeMode="contain" accessibilityLabel="Curalink" />
       </View>
       <Text style={styles.title}>{isApplying ? `Apply as ${roleLabel}` : "Sign in"}</Text>
       <Text style={styles.subtitle}>

@@ -75,7 +75,7 @@ h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif;color:var(--ink)}
 
 footer{background:var(--s);padding:54px 36px 36px;border-top:1px solid rgba(255,255,255,.04)}
 .fti{max-width:1060px;margin:0 auto;display:flex;flex-wrap:wrap;gap:40px;justify-content:space-between;align-items:flex-start}
-.ftlogo img{height:36px;width:auto;object-fit:contain;filter:brightness(0) invert(1);opacity:.85;margin-bottom:12px}
+.ftlogo img{height:36px;width:auto;object-fit:contain;margin-bottom:12px}
 .fttag{font-size:13px;color:rgba(255,255,255,.42);margin-bottom:18px;font-style:italic}
 .ftpl{font-size:13.5px;color:var(--g2);text-decoration:none;border-bottom:1px solid rgba(0,194,124,.3);padding-bottom:1px}
 .ftcol h4{font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:14px}

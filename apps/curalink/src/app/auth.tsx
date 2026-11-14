@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link, router, useLocalSearchParams } from "expo-router";
-import { Check, HeartPulse } from "lucide-react-native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Check } from "lucide-react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { getErrorMessage, sendEmailOtp, sendPhoneOtp, signInWithGoogle, useSessionStore } from "@curalink/api-client";
 import { Button, TextField, curalinkFonts, useTheme } from "@curalink/ui";
 
@@ -33,7 +33,9 @@ export default function AuthScreen() {
           width: 56,
           height: 56,
           borderRadius: 18,
-          backgroundColor: colors.primary,
+          backgroundColor: "#FFFFFF",
+          borderWidth: 1,
+          borderColor: colors.border,
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 20,
@@ -234,7 +236,7 @@ export default function AuthScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.iconChip}>
-        <HeartPulse size={28} color="#FFFFFF" strokeWidth={2} />
+        <Image source={require("../../assets/images/mark.png")} style={{ width: 34, height: 34 }} resizeMode="contain" accessibilityLabel="Curalink" />
       </View>
       <Text style={styles.title}>{isLogin ? "Welcome back" : "Welcome to CuraLink"}</Text>
       <Text style={styles.subtitle}>
